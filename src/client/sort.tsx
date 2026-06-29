@@ -134,7 +134,11 @@ function SortApp() {
 
   const handlePick = useCallback((iso3: string) => {
     if (showResult || !currentRound) return
-    if (picks.includes(iso3)) return
+
+    if (picks.includes(iso3)) {
+      setPicks(picks.filter((p) => p !== iso3))
+      return
+    }
 
     const newPicks = [...picks, iso3]
     setPicks(newPicks)
@@ -315,16 +319,15 @@ function SortApp() {
               key={country.iso3}
               type="button"
               onClick={() => handlePick(country.iso3)}
-              disabled={isPicked || showResult}
+              disabled={showResult}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '14px 16px', borderRadius: 10,
                 border: `1.5px solid ${borderCol}`,
                 background: bg, color: textCol,
                 fontFamily: FONT.body, fontSize: 15, fontWeight: 600,
-                cursor: isPicked || showResult ? 'default' : 'pointer',
+                cursor: showResult ? 'default' : 'pointer',
                 transition: 'all 0.15s',
-                opacity: isPicked && !showResult ? 0.5 : 1,
               }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
