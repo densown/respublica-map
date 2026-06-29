@@ -38,9 +38,10 @@ function generateQuiz(
   indicators: IndicatorDef[],
   geojson: WorldGeoJson,
   regions: Record<string, string>,
+  attempt: number,
 ): QuizQuestion[] {
   const today = new Date()
-  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate()
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate() + attempt * 99991
   const rng = seededRandom(seed)
 
   const candidates: { iso3: string; name: string }[] = []
@@ -98,6 +99,7 @@ function QuizApp() {
   const [selected, setSelected] = useState<string | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [attempt, setAttempt] = useState(0)
   const t = getTheme(true)
 
   useEffect(() => {
@@ -116,8 +118,8 @@ function QuizApp() {
 
   const questions = useMemo(() => {
     if (!indicators || !geojson) return []
-    return generateQuiz(indicators, geojson, regions)
-  }, [indicators, geojson, regions])
+    return generateQuiz(indicators, geojson, regions, attempt)
+  }, [indicators, geojson, regions, attempt])
 
   const currentQ = questions[round] ?? null
   const isFinished = round >= questions.length && questions.length > 0
@@ -142,6 +144,7 @@ function QuizApp() {
     setAnswers([])
     setSelected(null)
     setShowResult(false)
+    setAttempt((prev) => prev + 1)
   }, [])
 
   const handleShare = useCallback(() => {

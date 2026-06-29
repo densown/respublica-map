@@ -43,9 +43,10 @@ function shuffleWith<T>(arr: T[], rng: () => number): T[] {
 function generateRounds(
   indicators: IndicatorDef[],
   geojson: WorldGeoJson,
+  attempt: number,
 ): SortRound[] {
   const today = new Date()
-  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate() + 7777
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate() + 7777 + attempt * 99991
   const rng = seededRandom(seed)
 
   const usableIndicators = indicators.filter((ind) => {
@@ -107,6 +108,7 @@ function SortApp() {
   const [showResult, setShowResult] = useState(false)
   const [roundScores, setRoundScores] = useState<number[]>([])
   const [copied, setCopied] = useState(false)
+  const [attempt, setAttempt] = useState(0)
   const t = getTheme(true)
 
   useEffect(() => {
@@ -124,8 +126,8 @@ function SortApp() {
 
   const rounds = useMemo(() => {
     if (!indicators || !geojson) return []
-    return generateRounds(indicators, geojson)
-  }, [indicators, geojson])
+    return generateRounds(indicators, geojson, attempt)
+  }, [indicators, geojson, attempt])
 
   const currentRound = rounds[round] ?? null
   const isFinished = round >= rounds.length && rounds.length > 0
@@ -164,6 +166,7 @@ function SortApp() {
     setPicks([])
     setShowResult(false)
     setRoundScores([])
+    setAttempt((prev) => prev + 1)
   }, [])
 
   const handleShare = useCallback(() => {
