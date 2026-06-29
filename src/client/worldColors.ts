@@ -33,27 +33,26 @@ export function liftForDark(hex: string): string {
   return mix(hex, '#ffffff', 0.35)
 }
 
-export function worldFillColor(
-  value: number,
-  min: number,
-  max: number,
+export function worldFillColorByPercentile(
+  percentile: number,
   category: string,
   dark: boolean,
-  scaleType: 'linear' | 'log' = 'linear',
 ): string {
-  let t: number
-  if (scaleType === 'log' && min > 0 && max > 0) {
-    const logMin = Math.log(min)
-    const logMax = Math.log(max)
-    const span = logMax - logMin || 1
-    t = Math.min(1, Math.max(0, (Math.log(Math.max(value, min)) - logMin) / span))
-  } else {
-    const span = max - min || 1
-    t = Math.min(1, Math.max(0, (value - min) / span))
-  }
+  const t = Math.min(1, Math.max(0, percentile))
   const scale = SEQUENTIAL[category] ?? SEQUENTIAL['economy']
   const c = mix(scale!.lo, scale!.hi, t)
   return dark ? liftForDark(c) : c
+}
+
+export function computePercentile(value: number, sorted: number[]): number {
+  if (sorted.length <= 1) return 0.5
+  let lo = 0, hi = sorted.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (sorted[mid]! < value) lo = mid + 1
+    else hi = mid
+  }
+  return lo / (sorted.length - 1)
 }
 
 export function gradientCss(category: string, dark: boolean): string {

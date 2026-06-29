@@ -143,10 +143,9 @@ function Atlas() {
       </div>
 
       <WorldGlobe ref={globeRef} geojson={geojson} data={rows}
-        category={activeIndicator?.category ?? 'economy'} vMin={vMin} vMax={vMax}
+        category={activeIndicator?.category ?? 'economy'}
         unit={unit} indicatorName={activeIndicator?.name ?? ''}
-        scaleType={activeIndicator?.scale ?? 'linear'} formatValue={fmt}
-        dark={dark} onCountryClick={handleCountryClick} />
+        formatValue={fmt} dark={dark} onCountryClick={handleCountryClick} />
 
       <IndicatorPicker indicators={indicators} selected={selectedCode} onSelect={setSelectedCode} dark={dark} />
       <SearchBar geojson={geojson} dark={dark} onSelect={handleSearchSelect} />

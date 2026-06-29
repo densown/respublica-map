@@ -2,7 +2,7 @@ import { useEffect, useRef, useMemo, useCallback, useImperativeHandle, forwardRe
 import maplibregl from 'maplibre-gl'
 import type { ExpressionSpecification } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { worldFillColor } from './worldColors'
+import { worldFillColorByPercentile, computePercentile } from './worldColors'
 import type { MapRow, WorldGeoJson } from './worldTypes'
 
 const NODATA_DARK = '#2D2D2D'
@@ -34,18 +34,20 @@ function buildLocalStyle(dark: boolean): maplibregl.StyleSpecification {
 
 function buildFillExpr(
   rows: MapRow[],
-  vMin: number,
-  vMax: number,
   category: string,
   noData: string,
   dark: boolean,
-  scaleType: 'linear' | 'log' = 'linear',
 ): ExpressionSpecification {
+  const sorted = rows
+    .map((r) => r.value)
+    .filter((v): v is number => v != null && !Number.isNaN(v))
+    .sort((a, b) => a - b)
   const expr: unknown[] = ['match', ['upcase', ['get', 'iso3']] as ExpressionSpecification]
   for (const r of rows) {
     const v = r.value
     if (v == null || Number.isNaN(v)) continue
-    expr.push(normIso(r.country_code), worldFillColor(v, vMin, vMax, category, dark, scaleType))
+    const pct = computePercentile(v, sorted)
+    expr.push(normIso(r.country_code), worldFillColorByPercentile(pct, category, dark))
   }
   expr.push(noData)
   return expr as ExpressionSpecification
@@ -59,11 +61,8 @@ export type WorldGlobeProps = {
   geojson: WorldGeoJson | null
   data: MapRow[]
   category: string
-  vMin: number
-  vMax: number
   unit: string
   indicatorName: string
-  scaleType?: 'linear' | 'log'
   formatValue: (v: number) => string
   dark: boolean
   onCountryClick?: (iso3: string, name: string) => void
@@ -73,9 +72,6 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   geojson,
   data,
   category,
-  vMin,
-  vMax,
-  scaleType = 'linear',
   formatValue: fmtValue,
   dark,
   onCountryClick,
@@ -101,8 +97,8 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   const noData = dark ? NODATA_DARK : NODATA_LIGHT
 
   const fillExpr = useMemo(
-    () => buildFillExpr(data, vMin, vMax, category, noData, dark, scaleType),
-    [data, vMin, vMax, category, noData, dark, scaleType],
+    () => buildFillExpr(data, category, noData, dark),
+    [data, category, noData, dark],
   )
 
   const borderColor: ExpressionSpecification = useMemo(
