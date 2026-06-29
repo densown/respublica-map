@@ -20,8 +20,8 @@
   "menu": {
     "items": [
       {
-        "label": "Create a new post",
-        "description": "respublica-map",
+        "label": "Create World Atlas",
+        "description": "Create a new World Atlas post",
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/post-create"
