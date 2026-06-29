@@ -159,8 +159,15 @@ function Atlas() {
     <div className="atlas-root" data-dark={dark}>
       <div className="atlas-header">
         <div className="atlas-brand">
-          <span className="atlas-brand-name">World Atlas</span>
-          <span className="atlas-brand-by">by Res.Publica</span>
+          <a
+            href="https://www.reddit.com/r/Res_Publica_DE/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="atlas-brand-link"
+          >
+            <span className="atlas-brand-name">World Atlas</span>
+            <span className="atlas-brand-by">by Res.Publica</span>
+          </a>
         </div>
       </div>
 

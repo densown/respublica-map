@@ -34,6 +34,18 @@
   pointer-events: auto;
 }
 
+.atlas-brand-link {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.atlas-brand-link:hover {
+  opacity: 0.75;
+}
+
 .atlas-brand-name {
   font-family: 'Playfair Display', serif, system-ui;
   font-size: 16px;

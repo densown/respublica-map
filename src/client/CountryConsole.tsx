@@ -464,6 +464,60 @@ export function CountryConsole({
           {otherIndicators.map((ind) => (
             <IndicatorRow key={ind.code} ind={ind} iso3={iso3} year={selectedYear} regions={regions} dark={dark} />
           ))}
+
+          <div style={{
+            marginTop: 16,
+            padding: '12px 0 4px',
+            borderTop: `1px solid ${border}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}>
+            <a
+              href="https://www.reddit.com/r/Res_Publica_DE/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '8px 12px',
+                borderRadius: 6,
+                background: red,
+                color: '#fff',
+                fontFamily: "'Source Serif 4', serif, system-ui",
+                fontSize: 12,
+                fontWeight: 600,
+                textDecoration: 'none',
+                letterSpacing: '0.02em',
+              }}
+            >
+              Join r/Res_Publica_DE
+            </a>
+            <a
+              href="https://app.respublica.media"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '7px 12px',
+                borderRadius: 6,
+                border: `1px solid ${border}`,
+                background: 'transparent',
+                color: muted,
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 10,
+                textDecoration: 'none',
+                letterSpacing: '0.03em',
+              }}
+            >
+              Explore full dashboard on app.respublica.media
+            </a>
+          </div>
         </div>
       </div>
     </>
