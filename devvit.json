@@ -13,6 +13,9 @@
       },
       "quiz": {
         "entry": "quiz.html"
+      },
+      "higher": {
+        "entry": "higher.html"
       }
     }
   },

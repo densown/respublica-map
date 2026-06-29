@@ -20,28 +20,41 @@ function Splash() {
       <div style={{ fontSize: 13, color: '#8B8B8B', maxWidth: 260, textAlign: 'center' }}>
         Explore global indicators on an interactive globe
       </div>
-      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 8 }}>
         <button
           onClick={(e) => requestExpandedMode(e.nativeEvent, 'game')}
           style={{
-            padding: '10px 24px', borderRadius: 20, border: 'none',
+            padding: '10px 32px', borderRadius: 20, border: 'none',
             background: '#E8384F', color: '#fff', fontSize: 14, fontWeight: 600,
             cursor: 'pointer', fontFamily: "'Source Serif 4', serif, system-ui",
           }}
         >
           Open Globe
         </button>
-        <button
-          onClick={(e) => requestExpandedMode(e.nativeEvent, 'quiz')}
-          style={{
-            padding: '10px 24px', borderRadius: 20,
-            border: '1px solid #2D2D2D', background: 'transparent',
-            color: '#E8E4DC', fontSize: 14, fontWeight: 600,
-            cursor: 'pointer', fontFamily: "'Source Serif 4', serif, system-ui",
-          }}
-        >
-          Quiz Mode
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={(e) => requestExpandedMode(e.nativeEvent, 'quiz')}
+            style={{
+              padding: '8px 18px', borderRadius: 16,
+              border: '1px solid #2D2D2D', background: 'transparent',
+              color: '#E8E4DC', fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
+            }}
+          >
+            Guess Country
+          </button>
+          <button
+            onClick={(e) => requestExpandedMode(e.nativeEvent, 'higher')}
+            style={{
+              padding: '8px 18px', borderRadius: 16,
+              border: '1px solid #2D2D2D', background: 'transparent',
+              color: '#E8E4DC', fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
+            }}
+          >
+            Higher or Lower
+          </button>
+        </div>
       </div>
       <div style={{
         position: 'absolute', bottom: 12,
