@@ -16,6 +16,9 @@
       },
       "higher": {
         "entry": "higher.html"
+      },
+      "sort": {
+        "entry": "sort.html"
       }
     }
   },

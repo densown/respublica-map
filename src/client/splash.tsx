@@ -31,7 +31,7 @@ function Splash() {
         >
           Open Globe
         </button>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
             onClick={(e) => requestExpandedMode(e.nativeEvent, 'quiz')}
             style={{
@@ -53,6 +53,17 @@ function Splash() {
             }}
           >
             Higher or Lower
+          </button>
+          <button
+            onClick={(e) => requestExpandedMode(e.nativeEvent, 'sort')}
+            style={{
+              padding: '8px 18px', borderRadius: 16,
+              border: '1px solid #2D2D2D', background: 'transparent',
+              color: '#E8E4DC', fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
+            }}
+          >
+            Rank It
           </button>
         </div>
       </div>
