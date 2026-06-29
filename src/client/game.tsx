@@ -5,16 +5,59 @@ import { StrictMode, useCallback, useEffect, useState, useMemo } from 'react'
 import { createRoot } from 'react-dom/client'
 import { WorldGlobe } from './WorldGlobe'
 import { Legend } from './Legend'
+import { IndicatorPicker } from './IndicatorPicker'
 import { formatValue } from './formatValue'
-import type { WorldGeoJson, SnapshotFile, MapRow } from './worldTypes'
+import type { WorldGeoJson, IndicatorsFile, IndicatorDef, MapRow } from './worldTypes'
+
+function useDarkMode(): boolean {
+  const [dark, setDark] = useState(() => {
+    if (typeof window === 'undefined') return true
+    if (document.documentElement.classList.contains('dark')) return true
+    if (document.documentElement.getAttribute('data-theme') === 'dark') return true
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = (e: MediaQueryListEvent) => setDark(e.matches)
+    mq.addEventListener('change', handler)
+
+    const observer = new MutationObserver(() => {
+      const el = document.documentElement
+      if (el.classList.contains('dark') || el.getAttribute('data-theme') === 'dark') {
+        setDark(true)
+      }
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] })
+
+    return () => {
+      mq.removeEventListener('change', handler)
+      observer.disconnect()
+    }
+  }, [])
+
+  return dark
+}
+
+function indicatorToRows(ind: IndicatorDef, geojson: WorldGeoJson): MapRow[] {
+  return geojson.features.map((f) => {
+    const iso = f.properties.iso3.toUpperCase()
+    const val = ind.data[iso] ?? null
+    return {
+      country_code: iso,
+      country_name: f.properties.name,
+      value: val,
+      region: null,
+    }
+  })
+}
 
 function Atlas() {
   const [geojson, setGeojson] = useState<WorldGeoJson | null>(null)
-  const [snapshot, setSnapshot] = useState<SnapshotFile | null>(null)
+  const [indicators, setIndicators] = useState<IndicatorDef[] | null>(null)
+  const [selectedCode, setSelectedCode] = useState('NY.GDP.PCAP.CD')
   const [error, setError] = useState<string | null>(null)
-
-  const dark =
-    typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+  const dark = useDarkMode()
 
   useEffect(() => {
     void Promise.all([
@@ -22,34 +65,41 @@ function Atlas() {
         if (!r.ok) throw new Error(`GeoJSON: ${r.status}`)
         return r.json()
       }),
-      fetch('/data/snapshot-gdp.json').then((r) => {
-        if (!r.ok) throw new Error(`Snapshot: ${r.status}`)
+      fetch('/data/indicators.json').then((r) => {
+        if (!r.ok) throw new Error(`Indicators: ${r.status}`)
         return r.json()
       }),
     ])
-      .then(([gj, snap]) => {
+      .then(([gj, ind]) => {
         setGeojson(gj as WorldGeoJson)
-        setSnapshot(snap as SnapshotFile)
+        setIndicators((ind as IndicatorsFile).indicators)
       })
       .catch((e) => setError(String(e)))
   }, [])
 
-  const { vMin, vMax } = useMemo(() => {
-    if (!snapshot) return { vMin: 0, vMax: 1 }
-    const vals = snapshot.data
-      .map((r: MapRow) => r.value)
-      .filter((v): v is number => v != null && !Number.isNaN(v))
-    return {
-      vMin: Math.min(...vals),
-      vMax: Math.max(...vals),
-    }
-  }, [snapshot])
+  const activeIndicator = useMemo(
+    () => indicators?.find((i) => i.code === selectedCode) ?? indicators?.[0] ?? null,
+    [indicators, selectedCode],
+  )
 
-  const snapshotUnit = snapshot?.unit ?? ''
-  const snapshotIndicator = snapshot?.indicator ?? ''
+  const rows = useMemo(
+    () => (activeIndicator && geojson ? indicatorToRows(activeIndicator, geojson) : []),
+    [activeIndicator, geojson],
+  )
+
+  const { vMin, vMax } = useMemo(() => {
+    const vals = Object.values(activeIndicator?.data ?? {}).filter(
+      (v): v is number => v != null && !Number.isNaN(v),
+    )
+    if (!vals.length) return { vMin: 0, vMax: 1 }
+    return { vMin: Math.min(...vals), vMax: Math.max(...vals) }
+  }, [activeIndicator])
+
+  const unit = activeIndicator?.unit ?? ''
+  const code = activeIndicator?.code ?? ''
   const fmt = useCallback(
-    (v: number) => snapshotUnit ? formatValue(v, snapshotUnit, snapshotIndicator) : String(v),
-    [snapshotUnit, snapshotIndicator],
+    (v: number) => (unit ? formatValue(v, unit, code) : String(v)),
+    [unit, code],
   )
 
   if (error) {
@@ -61,9 +111,9 @@ function Atlas() {
     )
   }
 
-  if (!snapshot || !geojson) {
+  if (!indicators || !geojson) {
     return (
-      <div className="atlas-root atlas-loading">
+      <div className="atlas-root atlas-loading" data-dark={dark}>
         <div className="atlas-spinner" />
         <span>Loading World Atlas...</span>
       </div>
@@ -71,26 +121,44 @@ function Atlas() {
   }
 
   return (
-    <div className="atlas-root">
+    <div className="atlas-root" data-dark={dark}>
+      <div className="atlas-header">
+        <div className="atlas-brand">
+          <span className="atlas-brand-name">World Atlas</span>
+          <span className="atlas-brand-by">by Res.Publica</span>
+        </div>
+      </div>
+
       <WorldGlobe
         geojson={geojson}
-        data={snapshot.data}
-        category={snapshot.category}
+        data={rows}
+        category={activeIndicator?.category ?? 'economy'}
         vMin={vMin}
         vMax={vMax}
-        unit={snapshot.unit}
-        indicatorName={snapshot.name}
-        formatValue={fmt}
-      />
-      <Legend
-        category={snapshot.category}
-        vMin={vMin}
-        vMax={vMax}
-        indicatorName={snapshot.name}
-        year={snapshot.year}
+        unit={unit}
+        indicatorName={activeIndicator?.name ?? ''}
         formatValue={fmt}
         dark={dark}
       />
+
+      <IndicatorPicker
+        indicators={indicators}
+        selected={selectedCode}
+        onSelect={setSelectedCode}
+        dark={dark}
+      />
+
+      {activeIndicator && (
+        <Legend
+          category={activeIndicator.category}
+          vMin={vMin}
+          vMax={vMax}
+          indicatorName={activeIndicator.name}
+          year={activeIndicator.year}
+          formatValue={fmt}
+          dark={dark}
+        />
+      )}
     </div>
   )
 }

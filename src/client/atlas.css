@@ -3,7 +3,57 @@
   width: 100%;
   height: 100vh;
   overflow: hidden;
-  background: #13141f;
+  display: flex;
+  flex-direction: column;
+  background: #0c0e1a;
+  color: #e0e0e0;
+}
+
+.atlas-root[data-dark="false"] {
+  background: #b8c6d4;
+  color: #222;
+}
+
+.atlas-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  pointer-events: none;
+}
+
+.atlas-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.atlas-brand-name {
+  font-family: system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: #fff;
+}
+
+.atlas-root[data-dark="false"] .atlas-brand-name {
+  color: #111;
+}
+
+.atlas-brand-by {
+  font-family: monospace;
+  font-size: 11px;
+  opacity: 0.5;
+  color: #ccc;
+}
+
+.atlas-root[data-dark="false"] .atlas-brand-by {
+  color: #555;
 }
 
 .atlas-loading {
@@ -43,6 +93,7 @@
   }
 }
 
+/* MapLibre popup */
 .atlas-popup .maplibregl-popup-content {
   background: rgba(20, 20, 30, 0.92);
   border-radius: 6px;
@@ -55,6 +106,7 @@
   border-top-color: rgba(20, 20, 30, 0.92);
 }
 
+/* MapLibre nav controls */
 .maplibregl-ctrl-group {
   background: rgba(20, 20, 30, 0.8) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -74,25 +126,15 @@
   filter: invert(1);
 }
 
-@media (prefers-color-scheme: light) {
-  .atlas-root {
-    background: #d7dde6;
-  }
+.atlas-root[data-dark="false"] .maplibregl-ctrl-group {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+}
 
-  .atlas-loading {
-    color: #666;
-  }
+.atlas-root[data-dark="false"] .maplibregl-ctrl-group button + button {
+  border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
 
-  .maplibregl-ctrl-group {
-    background: rgba(255, 255, 255, 0.9) !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-  }
-
-  .maplibregl-ctrl-group button + button {
-    border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
-  }
-
-  .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
-    filter: none;
-  }
+.atlas-root[data-dark="false"] .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: none;
 }

@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useMemo, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import type { ExpressionSpecification } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { worldFillColor } from './worldColors'
 import type { MapRow, WorldGeoJson } from './worldTypes'
 
-const NODATA_DARK = '#3a3a3a'
-const NODATA_LIGHT = '#e0e0e0'
-const WATER_DARK = '#13141f'
-const WATER_LIGHT = '#d7dde6'
+const NODATA_DARK = '#2a2a3a'
+const NODATA_LIGHT = '#d5d5d5'
+const WATER_DARK = '#0c0e1a'
+const WATER_LIGHT = '#b8c6d4'
 
 function normIso(s: string): string {
   return s.trim().toUpperCase()
@@ -59,6 +59,7 @@ export type WorldGlobeProps = {
   unit: string
   indicatorName: string
   formatValue: (v: number) => string
+  dark: boolean
 }
 
 export function WorldGlobe({
@@ -68,6 +69,7 @@ export function WorldGlobe({
   vMin,
   vMax,
   formatValue: fmtValue,
+  dark,
 }: WorldGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -78,17 +80,6 @@ export function WorldGlobe({
 
   useEffect(() => { dataRef.current = data }, [data])
   useEffect(() => { fmtRef.current = fmtValue }, [fmtValue])
-
-  const [dark, setDark] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches,
-  )
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = (e: MediaQueryListEvent) => setDark(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
 
   const noData = dark ? NODATA_DARK : NODATA_LIGHT
 
@@ -102,13 +93,13 @@ export function WorldGlobe({
       'case',
       ['boolean', ['feature-state', 'hover'], false],
       '#ffffff',
-      dark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)',
+      dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.25)',
     ],
     [dark],
   )
 
   const borderWidth: ExpressionSpecification = useMemo(
-    () => ['case', ['boolean', ['feature-state', 'hover'], false], 1.5, 0.5],
+    () => ['case', ['boolean', ['feature-state', 'hover'], false], 1.5, 0.4],
     [],
   )
 
@@ -290,17 +281,8 @@ export function WorldGlobe({
   }
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', flex: 1, minHeight: 0 }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-      <div
-        style={{
-          position: 'absolute', left: 10, bottom: 10, zIndex: 10,
-          fontFamily: 'monospace', fontSize: 10, opacity: 0.4,
-          color: dark ? '#fff' : '#111', pointerEvents: 'none',
-        }}
-      >
-        Res.Publica
-      </div>
     </div>
   )
 }

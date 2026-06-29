@@ -5,13 +5,17 @@ export type MapRow = {
   region: string | null
 }
 
-export type SnapshotFile = {
-  indicator: string
+export type IndicatorDef = {
+  code: string
   name: string
   category: string
   unit: string
   year: number
-  data: MapRow[]
+  data: Record<string, number>
+}
+
+export type IndicatorsFile = {
+  indicators: IndicatorDef[]
 }
 
 export type GeoJsonFeature = {
