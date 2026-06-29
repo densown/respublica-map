@@ -4,14 +4,23 @@ Interactive WebGL globe for Reddit that visualizes global indicators with chorop
 
 ## Features
 
+### Globe Explorer
 - **Interactive Globe** — MapLibre GL with globe projection, hover tooltips, click-to-inspect
 - **11 Indicators** — GDP, life expectancy, CO2 emissions, military spending, inflation, unemployment, government debt, fertility rate, democracy index, corruption index, internet access
+- **Percentile Choropleth** — color gradient based on rank, not absolute value, for maximum contrast across all indicators
 - **Country Console** — detailed country view with rankings, red area charts showing time series, region averages
 - **Compare Mode** — select two countries, radar chart + side-by-side comparison table
 - **Year Navigation** — browse data from 2000 to 2023 with slider and console arrows
 - **Search** — find any country by name or ISO code
 - **Dark/Light Mode** — follows system preference
 - **Mobile-first** — bottom sheet console on mobile, sidebar on desktop
+
+### Game Modes
+- **Guess Country** — 10-round quiz: identify a country from 4 indicator clues, daily seed so all players get the same questions, shareable emoji score grid
+- **Higher or Lower** — endless streak: two countries shown with one hidden value, guess if it's higher or lower, server-side leaderboard via Redis sorted sets
+- **Rank It** — sort 4 countries by indicator value from highest to lowest, tap to select (tap again to undo), 10 rounds with daily seed
+
+All game modes include dismissable rules overlays and share-to-clipboard for Reddit engagement.
 
 ## Data Sources
 
@@ -26,6 +35,7 @@ Interactive WebGL globe for Reddit that visualizes global indicators with chorop
 - **MapLibre GL** — WebGL map rendering with globe projection
 - **Vite 8** — build tooling
 - **Hono** — server-side routing
+- **Devvit Redis** — persistent leaderboard storage
 
 ## Development
 
