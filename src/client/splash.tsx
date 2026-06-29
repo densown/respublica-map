@@ -20,16 +20,29 @@ function Splash() {
       <div style={{ fontSize: 13, color: '#8B8B8B', maxWidth: 260, textAlign: 'center' }}>
         Explore global indicators on an interactive globe
       </div>
-      <button
-        onClick={(e) => requestExpandedMode(e.nativeEvent, 'game')}
-        style={{
-          marginTop: 8, padding: '10px 24px', borderRadius: 20, border: 'none',
-          background: '#E8384F', color: '#fff', fontSize: 14, fontWeight: 600,
-          cursor: 'pointer', fontFamily: "'Source Serif 4', serif, system-ui",
-        }}
-      >
-        Open Globe
-      </button>
+      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+        <button
+          onClick={(e) => requestExpandedMode(e.nativeEvent, 'game')}
+          style={{
+            padding: '10px 24px', borderRadius: 20, border: 'none',
+            background: '#E8384F', color: '#fff', fontSize: 14, fontWeight: 600,
+            cursor: 'pointer', fontFamily: "'Source Serif 4', serif, system-ui",
+          }}
+        >
+          Open Globe
+        </button>
+        <button
+          onClick={(e) => requestExpandedMode(e.nativeEvent, 'quiz')}
+          style={{
+            padding: '10px 24px', borderRadius: 20,
+            border: '1px solid #2D2D2D', background: 'transparent',
+            color: '#E8E4DC', fontSize: 14, fontWeight: 600,
+            cursor: 'pointer', fontFamily: "'Source Serif 4', serif, system-ui",
+          }}
+        >
+          Quiz Mode
+        </button>
+      </div>
       <div style={{
         position: 'absolute', bottom: 12,
         fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: '#525960',
