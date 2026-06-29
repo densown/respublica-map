@@ -173,6 +173,7 @@ function Atlas() {
         vMax={vMax}
         unit={unit}
         indicatorName={activeIndicator?.name ?? ''}
+        scaleType={activeIndicator?.scale ?? 'linear'}
         formatValue={fmt}
         dark={dark}
         onCountryClick={handleCountryClick}

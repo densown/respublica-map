@@ -27,7 +27,7 @@ export function YearSlider({ years, selected, onChange, dark }: YearSliderProps)
         return
       }
       onChange(years[idx + 1]!)
-    }, 1200)
+    }, 800)
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
@@ -36,6 +36,7 @@ export function YearSlider({ years, selected, onChange, dark }: YearSliderProps)
   const bg = dark ? 'rgba(26,26,26,0.95)' : 'rgba(255,255,255,0.95)'
   const border = dark ? '#2D2D2D' : '#E8E4DC'
   const muted = dark ? '#8B8B8B' : '#525960'
+  const ink = dark ? '#E8E4DC' : '#0F0F0F'
   const active = dark ? '#E8384F' : '#C8102E'
 
   const handlePlay = () => {
@@ -49,6 +50,8 @@ export function YearSlider({ years, selected, onChange, dark }: YearSliderProps)
     }
   }
 
+  const idx = years.indexOf(selected)
+
   return (
     <div
       style={{
@@ -59,12 +62,13 @@ export function YearSlider({ years, selected, onChange, dark }: YearSliderProps)
         zIndex: 20,
         background: bg,
         borderRadius: 8,
-        padding: '5px 10px',
+        padding: '6px 14px',
         backdropFilter: 'blur(8px)',
         border: `1px solid ${border}`,
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
+        gap: 10,
+        width: 320,
         maxWidth: 'calc(100vw - 40px)',
       }}
     >
@@ -89,34 +93,40 @@ export function YearSlider({ years, selected, onChange, dark }: YearSliderProps)
         {playing ? '||' : '▶'}
       </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-        {years.map((y) => {
-          const isActive = y === selected
-          return (
-            <button
-              key={y}
-              onClick={() => {
-                setPlaying(false)
-                onChange(y)
-              }}
-              style={{
-                padding: '3px 6px',
-                borderRadius: 4,
-                border: 'none',
-                background: isActive ? active : 'transparent',
-                color: isActive ? '#fff' : muted,
-                cursor: 'pointer',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 9,
-                fontWeight: isActive ? 700 : 400,
-                transition: 'background 0.15s, color 0.15s',
-                flexShrink: 0,
-              }}
-            >
-              {y}
-            </button>
-          )
-        })}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+        <input
+          type="range"
+          min={0}
+          max={years.length - 1}
+          value={idx >= 0 ? idx : 0}
+          onChange={(e) => {
+            setPlaying(false)
+            onChange(years[Number(e.target.value)]!)
+          }}
+          className="atlas-year-range"
+          style={{
+            width: '100%',
+            accentColor: active,
+            cursor: 'pointer',
+          }}
+        />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: 9,
+          color: muted,
+        }}>
+          <span>{years[0]}</span>
+          <span style={{
+            fontWeight: 700,
+            color: ink,
+            fontSize: 11,
+          }}>
+            {selected}
+          </span>
+          <span>{years[years.length - 1]}</span>
+        </div>
       </div>
     </div>
   )

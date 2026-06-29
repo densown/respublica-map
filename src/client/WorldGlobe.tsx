@@ -39,12 +39,13 @@ function buildFillExpr(
   category: string,
   noData: string,
   dark: boolean,
+  scaleType: 'linear' | 'log' = 'linear',
 ): ExpressionSpecification {
   const expr: unknown[] = ['match', ['upcase', ['get', 'iso3']] as ExpressionSpecification]
   for (const r of rows) {
     const v = r.value
     if (v == null || Number.isNaN(v)) continue
-    expr.push(normIso(r.country_code), worldFillColor(v, vMin, vMax, category, dark))
+    expr.push(normIso(r.country_code), worldFillColor(v, vMin, vMax, category, dark, scaleType))
   }
   expr.push(noData)
   return expr as ExpressionSpecification
@@ -62,6 +63,7 @@ export type WorldGlobeProps = {
   vMax: number
   unit: string
   indicatorName: string
+  scaleType?: 'linear' | 'log'
   formatValue: (v: number) => string
   dark: boolean
   onCountryClick?: (iso3: string, name: string) => void
@@ -73,6 +75,7 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   category,
   vMin,
   vMax,
+  scaleType = 'linear',
   formatValue: fmtValue,
   dark,
   onCountryClick,
@@ -98,8 +101,8 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   const noData = dark ? NODATA_DARK : NODATA_LIGHT
 
   const fillExpr = useMemo(
-    () => buildFillExpr(data, vMin, vMax, category, noData, dark),
-    [data, vMin, vMax, category, noData, dark],
+    () => buildFillExpr(data, vMin, vMax, category, noData, dark, scaleType),
+    [data, vMin, vMax, category, noData, dark, scaleType],
   )
 
   const borderColor: ExpressionSpecification = useMemo(

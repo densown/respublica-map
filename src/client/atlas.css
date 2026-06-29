@@ -94,6 +94,37 @@
   }
 }
 
+/* Year range slider */
+.atlas-year-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: #2D2D2D;
+  outline: none;
+}
+
+.atlas-root[data-dark="false"] .atlas-year-range {
+  background: #E8E4DC;
+}
+
+.atlas-year-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.atlas-year-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
 /* MapLibre popup */
 .atlas-popup .maplibregl-popup-content {
   background: rgba(26, 26, 26, 0.95);

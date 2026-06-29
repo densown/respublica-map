@@ -39,9 +39,18 @@ export function worldFillColor(
   max: number,
   category: string,
   dark: boolean,
+  scaleType: 'linear' | 'log' = 'linear',
 ): string {
-  const span = max - min || 1
-  const t = Math.min(1, Math.max(0, (value - min) / span))
+  let t: number
+  if (scaleType === 'log' && min > 0 && max > 0) {
+    const logMin = Math.log(min)
+    const logMax = Math.log(max)
+    const span = logMax - logMin || 1
+    t = Math.min(1, Math.max(0, (Math.log(Math.max(value, min)) - logMin) / span))
+  } else {
+    const span = max - min || 1
+    t = Math.min(1, Math.max(0, (value - min) / span))
+  }
   const scale = SEQUENTIAL[category] ?? SEQUENTIAL['economy']
   const c = mix(scale!.lo, scale!.hi, t)
   return dark ? liftForDark(c) : c

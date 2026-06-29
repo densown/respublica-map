@@ -16,6 +16,7 @@ export type IndicatorDef = {
   name: string
   category: string
   unit: string
+  scale?: 'linear' | 'log'
   latestYear: number
   years: number[]
   data: Record<number, Record<string, number>>
