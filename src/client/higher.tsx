@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client'
 import { formatValue } from './formatValue'
 import { getTheme, FONT } from './theme'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef } from './worldTypes'
+import type { LeaderboardEntry, LeaderboardResponse } from '../shared/api'
 
 type CountryValue = {
   iso3: string
@@ -71,6 +72,10 @@ function HigherLowerApp() {
   const [bestStreak, setBestStreak] = useState(0)
   const [lastCorrect, setLastCorrect] = useState<boolean | null>(null)
   const [copied, setCopied] = useState(false)
+  const [username, setUsername] = useState<string | null>(null)
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null)
+  const [scoreSubmitted, setScoreSubmitted] = useState(false)
   const t = getTheme(true)
 
   useEffect(() => {
@@ -84,13 +89,49 @@ function HigherLowerApp() {
         setIndicators(file.indicators)
       })
       .catch((e) => setError(String(e)))
+
+    void fetch('/api/init')
+      .then((r) => r.json())
+      .then((data) => { if (data.username) setUsername(data.username) })
+      .catch(() => {})
   }, [])
+
+  const fetchLeaderboard = useCallback(() => {
+    void fetch('/api/higher/leaderboard')
+      .then((r) => r.json())
+      .then((data: LeaderboardResponse) => {
+        setLeaderboard(data.entries)
+        if (data.userEntry) setUserRank(data.userEntry)
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetchLeaderboard()
+  }, [fetchLeaderboard])
 
   useEffect(() => {
     if (indicators && geojson && !currentRound) {
       setCurrentRound(pickRound(indicators, geojson))
     }
   }, [indicators, geojson, currentRound])
+
+  useEffect(() => {
+    if (gameState !== 'gameover' || scoreSubmitted) return
+    setScoreSubmitted(true)
+    const finalScore = streak
+    if (finalScore < 1) {
+      fetchLeaderboard()
+      return
+    }
+    void fetch('/api/higher/score', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ score: finalScore }),
+    })
+      .then(() => fetchLeaderboard())
+      .catch(() => {})
+  }, [gameState, streak, scoreSubmitted, fetchLeaderboard])
 
   const handleGuess = useCallback((guess: 'higher' | 'lower') => {
     if (gameState !== 'playing' || !currentRound || !indicators || !geojson) return
@@ -124,6 +165,7 @@ function HigherLowerApp() {
     if (!indicators || !geojson) return
     setStreak(0)
     setLastCorrect(null)
+    setScoreSubmitted(false)
     setCurrentRound(pickRound(indicators, geojson))
     setGameState('playing')
   }, [indicators, geojson])
@@ -158,17 +200,18 @@ function HigherLowerApp() {
   if (gameState === 'gameover') {
     return (
       <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        minHeight: '100vh', background: '#111111', color: '#E8E4DC', padding: 24, gap: 16,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        minHeight: '100vh', background: '#111111', color: '#E8E4DC', padding: '24px 16px',
+        overflowY: 'auto',
       }}>
-        <div style={{ fontFamily: FONT.display, fontSize: 28, fontWeight: 900 }}>
+        <div style={{ fontFamily: FONT.display, fontSize: 28, fontWeight: 900, marginTop: 16 }}>
           Game Over<span style={{ color: t.red }}>.</span>
         </div>
 
-        {/* Show the final answer */}
+        {/* Final answer card */}
         <div style={{
           width: '100%', maxWidth: 320, background: 'rgba(255,255,255,0.03)',
-          borderRadius: 10, border: `1px solid ${t.border}`, padding: 16, marginBottom: 4,
+          borderRadius: 10, border: `1px solid ${t.border}`, padding: 16, margin: '12px 0 4px',
         }}>
           <div style={{ fontFamily: FONT.mono, fontSize: 9, color: t.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
             {currentRound.indicator.name}
@@ -186,13 +229,14 @@ function HigherLowerApp() {
           </div>
         </div>
 
-        <div style={{ fontFamily: FONT.display, fontSize: 48, fontWeight: 900, color: t.red, lineHeight: 1 }}>
+        <div style={{ fontFamily: FONT.display, fontSize: 48, fontWeight: 900, color: t.red, lineHeight: 1, marginTop: 8 }}>
           {streak}
         </div>
         <div style={{ fontFamily: FONT.mono, fontSize: 11, color: t.muted, letterSpacing: '0.1em' }}>
           STREAK {bestStreak > streak ? `· BEST: ${bestStreak}` : ''}
         </div>
-        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
           <button type="button" onClick={handleShare} style={{
             padding: '10px 24px', borderRadius: 20, border: 'none', background: t.red,
             color: '#fff', fontFamily: FONT.body, fontSize: 14, fontWeight: 600, cursor: 'pointer',
@@ -206,9 +250,86 @@ function HigherLowerApp() {
             Play Again
           </button>
         </div>
+
+        {/* Leaderboard */}
+        {leaderboard.length > 0 && (
+          <div style={{
+            width: '100%', maxWidth: 320, marginTop: 20,
+            background: 'rgba(255,255,255,0.03)', borderRadius: 10,
+            border: `1px solid ${t.border}`, overflow: 'hidden',
+          }}>
+            <div style={{
+              padding: '10px 16px', borderBottom: `1px solid ${t.border}`,
+              fontFamily: FONT.mono, fontSize: 9, color: t.muted,
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+            }}>
+              Bestenliste
+            </div>
+            {leaderboard.map((entry) => {
+              const isUser = entry.username === username
+              return (
+                <div key={entry.rank} style={{
+                  display: 'flex', alignItems: 'center', padding: '8px 16px',
+                  borderBottom: `1px solid ${t.border}`,
+                  background: isUser ? 'rgba(232,56,79,0.08)' : 'transparent',
+                }}>
+                  <span style={{
+                    fontFamily: FONT.mono, fontSize: 11, color: entry.rank <= 3 ? t.red : t.muted,
+                    fontWeight: entry.rank <= 3 ? 700 : 400, width: 24,
+                  }}>
+                    {entry.rank}.
+                  </span>
+                  <span style={{
+                    fontFamily: FONT.body, fontSize: 13, fontWeight: isUser ? 700 : 400,
+                    color: isUser ? t.ink : t.muted, flex: 1,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {entry.username === 'anonymous' ? 'Anonym' : `u/${entry.username}`}
+                  </span>
+                  <span style={{
+                    fontFamily: FONT.display, fontSize: 16, fontWeight: 900,
+                    color: entry.rank <= 3 ? t.red : t.ink,
+                  }}>
+                    {entry.score}
+                  </span>
+                </div>
+              )
+            })}
+            {userRank && !leaderboard.some((e) => e.username === username) && (
+              <>
+                <div style={{
+                  padding: '4px 16px', fontFamily: FONT.mono, fontSize: 9,
+                  color: t.muted, textAlign: 'center',
+                }}>···</div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', padding: '8px 16px',
+                  background: 'rgba(232,56,79,0.08)',
+                }}>
+                  <span style={{
+                    fontFamily: FONT.mono, fontSize: 11, color: t.muted, width: 24,
+                  }}>
+                    {userRank.rank}.
+                  </span>
+                  <span style={{
+                    fontFamily: FONT.body, fontSize: 13, fontWeight: 700,
+                    color: t.ink, flex: 1,
+                  }}>
+                    u/{userRank.username}
+                  </span>
+                  <span style={{
+                    fontFamily: FONT.display, fontSize: 16, fontWeight: 900, color: t.ink,
+                  }}>
+                    {userRank.score}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         <div style={{
-          position: 'absolute', bottom: 12,
           fontFamily: FONT.mono, fontSize: 10, color: '#525960',
+          marginTop: 16, marginBottom: 12,
         }}>
           r/Res_Publica_DE
         </div>
