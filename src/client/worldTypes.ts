@@ -16,6 +16,7 @@ export type IndicatorDef = {
 }
 
 export type IndicatorsFile = {
+  regions: Record<string, string>
   indicators: IndicatorDef[]
 }
 

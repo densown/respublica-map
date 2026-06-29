@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useMemo, useCallback, useImperativeHandle, forwardRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import type { ExpressionSpecification } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -50,6 +50,10 @@ function buildFillExpr(
   return expr as ExpressionSpecification
 }
 
+export type WorldGlobeHandle = {
+  flyTo: (lng: number, lat: number) => void
+}
+
 export type WorldGlobeProps = {
   geojson: WorldGeoJson | null
   data: MapRow[]
@@ -63,7 +67,7 @@ export type WorldGlobeProps = {
   onCountryClick?: (iso3: string, name: string) => void
 }
 
-export function WorldGlobe({
+export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function WorldGlobe({
   geojson,
   data,
   category,
@@ -72,7 +76,7 @@ export function WorldGlobe({
   formatValue: fmtValue,
   dark,
   onCountryClick,
-}: WorldGlobeProps) {
+}, ref) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const popupRef = useRef<maplibregl.Popup | null>(null)
@@ -84,6 +88,12 @@ export function WorldGlobe({
   useEffect(() => { dataRef.current = data }, [data])
   useEffect(() => { fmtRef.current = fmtValue }, [fmtValue])
   useEffect(() => { clickRef.current = onCountryClick }, [onCountryClick])
+
+  useImperativeHandle(ref, () => ({
+    flyTo(lng: number, lat: number) {
+      mapRef.current?.flyTo({ center: [lng, lat], zoom: 4, duration: 1200 })
+    },
+  }), [])
 
   const noData = dark ? NODATA_DARK : NODATA_LIGHT
 
@@ -300,4 +310,4 @@ export function WorldGlobe({
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
     </div>
   )
-}
+})

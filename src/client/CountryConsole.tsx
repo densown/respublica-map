@@ -14,42 +14,110 @@ function getTimeSeries(ind: IndicatorDef, iso3: string): { year: number; value: 
   return series
 }
 
-function MiniSparkline({ series, dark }: { series: { year: number; value: number }[]; dark: boolean }) {
+function computeRank(ind: IndicatorDef, iso3: string, year: number): { rank: number; total: number } | null {
+  const yearData = ind.data[year] ?? ind.data[ind.latestYear]
+  if (!yearData) return null
+  const v = yearData[iso3]
+  if (v == null) return null
+  const vals = Object.values(yearData).filter((x): x is number => x != null && !Number.isNaN(x))
+  vals.sort((a, b) => b - a)
+  const rank = vals.indexOf(v) + 1
+  return { rank, total: vals.length }
+}
+
+function computeRegionAvg(
+  ind: IndicatorDef,
+  iso3: string,
+  year: number,
+  regions: Record<string, string>,
+): number | null {
+  const region = regions[iso3]
+  if (!region) return null
+  const yearData = ind.data[year] ?? ind.data[ind.latestYear]
+  if (!yearData) return null
+  const regionIsos = Object.entries(regions).filter(([, r]) => r === region).map(([i]) => i)
+  const vals = regionIsos.map((i) => yearData[i]).filter((x): x is number => x != null && !Number.isNaN(x))
+  if (!vals.length) return null
+  return vals.reduce((a, b) => a + b, 0) / vals.length
+}
+
+function MiniSparkline({
+  series,
+  regionAvg,
+  dark,
+}: {
+  series: { year: number; value: number }[]
+  regionAvg?: number | null
+  dark: boolean
+}) {
   if (series.length < 2) return null
 
-  const w = 80
-  const h = 24
-  const pad = 2
+  const w = 120
+  const h = 32
+  const pad = 3
   const vals = series.map((s) => s.value)
-  const min = Math.min(...vals)
-  const max = Math.max(...vals)
+  let min = Math.min(...vals)
+  let max = Math.max(...vals)
+  if (regionAvg != null) {
+    min = Math.min(min, regionAvg)
+    max = Math.max(max, regionAvg)
+  }
   const range = max - min || 1
 
   const points = series.map((s, i) => {
     const x = pad + (i / (series.length - 1)) * (w - 2 * pad)
     const y = h - pad - ((s.value - min) / range) * (h - 2 * pad)
-    return `${x},${y}`
+    return [x, y] as const
   })
 
   const color = dark ? '#3b82f6' : '#2563eb'
+  const regionColor = dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'
 
   return (
     <svg width={w} height={h} style={{ flexShrink: 0 }}>
+      {regionAvg != null && (
+        <line
+          x1={pad}
+          x2={w - pad}
+          y1={h - pad - ((regionAvg - min) / range) * (h - 2 * pad)}
+          y2={h - pad - ((regionAvg - min) / range) * (h - 2 * pad)}
+          stroke={regionColor}
+          strokeWidth={1}
+          strokeDasharray="3,2"
+        />
+      )}
       <polyline
-        points={points.join(' ')}
+        points={points.map((p) => `${p[0]},${p[1]}`).join(' ')}
         fill="none"
         stroke={color}
         strokeWidth={1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle
-        cx={Number(points[points.length - 1]!.split(',')[0])}
-        cy={Number(points[points.length - 1]!.split(',')[1])}
-        r={2}
-        fill={color}
-      />
+      <circle cx={points[points.length - 1]![0]} cy={points[points.length - 1]![1]} r={2.5} fill={color} />
     </svg>
+  )
+}
+
+function PercentileBar({ rank, total, dark }: { rank: number; total: number; dark: boolean }) {
+  const pct = ((total - rank) / (total - 1)) * 100
+  const bg = dark ? '#2D2D2D' : '#E8E4DC'
+  const fill = pct > 66 ? (dark ? '#3DA85A' : '#2D7D46') : pct > 33 ? '#f59e0b' : (dark ? '#E8384F' : '#C8102E')
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+      <div style={{ flex: 1, height: 4, borderRadius: 2, background: bg, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 2, background: fill, transition: 'width 0.3s' }} />
+      </div>
+      <span style={{
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: 9,
+        color: dark ? '#8B8B8B' : '#525960',
+        flexShrink: 0,
+      }}>
+        #{rank}/{total}
+      </span>
+    </div>
   )
 }
 
@@ -60,6 +128,7 @@ export type CountryConsoleProps = {
   indicators: IndicatorDef[]
   selectedCode: string
   selectedYear: number
+  regions: Record<string, string>
   dark: boolean
   onClose: () => void
 }
@@ -67,28 +136,28 @@ export type CountryConsoleProps = {
 function IndicatorRow({
   ind,
   iso3,
+  year,
+  regions,
   dark,
 }: {
   ind: IndicatorDef
   iso3: string
+  year: number
+  regions: Record<string, string>
   dark: boolean
 }) {
   const border = dark ? '#2D2D2D' : '#E8E4DC'
   const muted = dark ? '#8B8B8B' : '#525960'
   const ink = dark ? '#E8E4DC' : '#0F0F0F'
 
-  const latestData = ind.data[ind.latestYear]
-  const v = latestData?.[iso3]
+  const yearData = ind.data[year] ?? ind.data[ind.latestYear]
+  const v = yearData?.[iso3]
   const formatted = v != null && !Number.isNaN(v) ? fmtForIndicator(v, ind) : '—'
   const series = getTimeSeries(ind, iso3)
+  const regionAvg = computeRegionAvg(ind, iso3, year, regions)
 
   return (
-    <div
-      style={{
-        padding: '8px 0',
-        borderBottom: `1px solid ${border}`,
-      }}
-    >
+    <div style={{ padding: '8px 0', borderBottom: `1px solid ${border}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span
           style={{
@@ -121,10 +190,12 @@ function IndicatorRow({
       </div>
       {series.length >= 2 && (
         <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <MiniSparkline series={series} dark={dark} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: muted }}>
-            {series[0]!.year}–{series[series.length - 1]!.year}
-          </span>
+          <MiniSparkline series={series} regionAvg={regionAvg} dark={dark} />
+          {regionAvg != null && (
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: muted }}>
+              --- Ø region
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -138,6 +209,7 @@ export function CountryConsole({
   indicators,
   selectedCode,
   selectedYear,
+  regions,
   dark,
   onClose,
 }: CountryConsoleProps) {
@@ -159,180 +231,201 @@ export function CountryConsole({
       : 'No data'
 
   const activeSeries = activeIndicator ? getTimeSeries(activeIndicator, iso3) : []
+  const activeRank = activeIndicator ? computeRank(activeIndicator, iso3, selectedYear) : null
+  const activeRegionAvg = activeIndicator ? computeRegionAvg(activeIndicator, iso3, selectedYear, regions) : null
+  const region = regions[iso3]
 
   const otherIndicators = indicators.filter((i) => i.code !== selectedCode)
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: 300,
-        maxWidth: '85vw',
-        zIndex: 30,
-        background: cardBg,
-        borderLeft: `1px solid ${border}`,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        boxShadow: shadow,
-        animation: 'atlas-console-in 0.25s ease-out',
-      }}
-    >
+    <>
+      {/* Mobile overlay backdrop */}
       <div
+        className="atlas-console-backdrop"
+        onClick={onClose}
         style={{
-          padding: '16px 16px 12px',
-          borderBottom: `1px solid ${border}`,
-          flexShrink: 0,
+          position: 'absolute',
+          inset: 0,
+          zIndex: 29,
+          background: 'rgba(0,0,0,0.3)',
+        }}
+      />
+      <div
+        className="atlas-console"
+        style={{
+          position: 'absolute',
+          zIndex: 30,
+          background: cardBg,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          boxShadow: shadow,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
-            <h2
+        <div
+          style={{
+            padding: '14px 14px 10px',
+            borderBottom: `1px solid ${border}`,
+            flexShrink: 0,
+          }}
+        >
+          {/* Drag handle on mobile */}
+          <div className="atlas-console-handle" style={{
+            width: 36,
+            height: 4,
+            borderRadius: 2,
+            background: dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+            margin: '0 auto 10px',
+          }} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+              <h2
+                style={{
+                  fontFamily: "'Playfair Display', serif, system-ui",
+                  fontWeight: 900,
+                  fontSize: 20,
+                  color: ink,
+                  lineHeight: 1.1,
+                  margin: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {countryName}
+                <span style={{ color: red }}>.</span>
+              </h2>
+              <p
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 9,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: muted,
+                  margin: 0,
+                  marginTop: 3,
+                }}
+              >
+                {iso3}{region ? ` · ${region}` : ''}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
               style={{
-                fontFamily: "'Playfair Display', serif, system-ui",
-                fontWeight: 900,
-                fontSize: 20,
-                color: ink,
-                lineHeight: 1.1,
-                margin: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {countryName}
-              <span style={{ color: red }}>.</span>
-            </h2>
-            <p
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 9,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
+                width: 28,
+                height: 28,
+                border: `1px solid ${border}`,
+                borderRadius: 4,
+                background: 'transparent',
                 color: muted,
-                margin: 0,
-                marginTop: 3,
+                cursor: 'pointer',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 11,
+                lineHeight: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              {iso3}
-            </p>
+              ✕
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
+        </div>
+
+        <div
+          style={{
+            padding: '14px',
+            borderBottom: `1px solid ${border}`,
+            flexShrink: 0,
+          }}
+        >
+          <div
             style={{
-              width: 28,
-              height: 28,
-              border: `1px solid ${border}`,
-              borderRadius: 4,
-              background: 'transparent',
-              color: muted,
-              cursor: 'pointer',
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 11,
-              lineHeight: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
+              fontSize: 9,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: muted,
+              marginBottom: 4,
             }}
           >
-            ✕
-          </button>
-        </div>
-      </div>
-
-      <div
-        style={{
-          padding: '16px',
-          borderBottom: `1px solid ${border}`,
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 9,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: muted,
-            marginBottom: 4,
-          }}
-        >
-          {activeIndicator?.name ?? 'Indicator'}
-        </div>
-        <div
-          style={{
-            fontFamily: "'Playfair Display', serif, system-ui",
-            fontWeight: 900,
-            fontSize: 36,
-            color: ink,
-            lineHeight: 1,
-            letterSpacing: '-0.02em',
-          }}
-        >
-          {mainValue}
-        </div>
-        <div
-          style={{
-            fontFamily: 'system-ui, sans-serif',
-            fontSize: 11,
-            color: muted,
-            marginTop: 4,
-          }}
-        >
-          {activeIndicator?.code} · {selectedYear}
-        </div>
-        {activeSeries.length >= 2 && (
-          <div style={{ marginTop: 10 }}>
-            <MiniSparkline series={activeSeries} dark={dark} />
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 8,
-                color: muted,
-                marginTop: 2,
-              }}
-            >
-              <span>{activeSeries[0]!.year}</span>
-              <span>{activeSeries[activeSeries.length - 1]!.year}</span>
-            </div>
+            {activeIndicator?.name ?? 'Indicator'}
           </div>
-        )}
-      </div>
+          <div
+            style={{
+              fontFamily: "'Playfair Display', serif, system-ui",
+              fontWeight: 900,
+              fontSize: 32,
+              color: ink,
+              lineHeight: 1,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {mainValue}
+          </div>
+          <div
+            style={{
+              fontFamily: 'system-ui, sans-serif',
+              fontSize: 11,
+              color: muted,
+              marginTop: 4,
+            }}
+          >
+            {activeIndicator?.code} · {selectedYear}
+          </div>
+          {activeRank && <PercentileBar rank={activeRank.rank} total={activeRank.total} dark={dark} />}
+          {activeSeries.length >= 2 && (
+            <div style={{ marginTop: 10 }}>
+              <MiniSparkline series={activeSeries} regionAvg={activeRegionAvg} dark={dark} />
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 8,
+                  color: muted,
+                  marginTop: 2,
+                }}
+              >
+                <span>{activeSeries[0]!.year}</span>
+                {activeRegionAvg != null && <span>--- Ø {region}</span>}
+                <span>{activeSeries[activeSeries.length - 1]!.year}</span>
+              </div>
+            </div>
+          )}
+        </div>
 
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: 'auto',
-          padding: '12px 16px 24px',
-          scrollbarWidth: 'thin',
-        }}
-      >
         <div
           style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 9,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: muted,
-            marginBottom: 8,
-            paddingBottom: 6,
-            borderBottom: `1px solid ${border}`,
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            padding: '10px 14px 24px',
+            scrollbarWidth: 'thin',
           }}
         >
-          All indicators
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: muted,
+              marginBottom: 6,
+              paddingBottom: 4,
+              borderBottom: `1px solid ${border}`,
+            }}
+          >
+            All indicators
+          </div>
+          {otherIndicators.map((ind) => (
+            <IndicatorRow key={ind.code} ind={ind} iso3={iso3} year={selectedYear} regions={regions} dark={dark} />
+          ))}
         </div>
-        {otherIndicators.map((ind) => (
-          <IndicatorRow key={ind.code} ind={ind} iso3={iso3} dark={dark} />
-        ))}
       </div>
-    </div>
+    </>
   )
 }

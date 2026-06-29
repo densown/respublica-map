@@ -1,13 +1,16 @@
 import './index.css'
 import './atlas.css'
 
-import { StrictMode, useCallback, useEffect, useState, useMemo } from 'react'
+import { StrictMode, useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { createRoot } from 'react-dom/client'
 import { WorldGlobe } from './WorldGlobe'
+import type { WorldGlobeHandle } from './WorldGlobe'
 import { Legend } from './Legend'
 import { IndicatorPicker } from './IndicatorPicker'
 import { CountryConsole } from './CountryConsole'
 import { YearSlider } from './YearSlider'
+import { SearchBar } from './SearchBar'
+import { ShareButton } from './ShareButton'
 import { formatValue } from './formatValue'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef, MapRow } from './worldTypes'
 
@@ -58,11 +61,13 @@ function indicatorToRows(ind: IndicatorDef, year: number, geojson: WorldGeoJson)
 function Atlas() {
   const [geojson, setGeojson] = useState<WorldGeoJson | null>(null)
   const [indicators, setIndicators] = useState<IndicatorDef[] | null>(null)
+  const [regions, setRegions] = useState<Record<string, string>>({})
   const [selectedCode, setSelectedCode] = useState('NY.GDP.PCAP.CD')
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
   const [selectedCountry, setSelectedCountry] = useState<{ iso3: string; name: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const dark = useDarkMode()
+  const globeRef = useRef<WorldGlobeHandle>(null)
 
   useEffect(() => {
     void Promise.all([
@@ -77,7 +82,9 @@ function Atlas() {
     ])
       .then(([gj, ind]) => {
         setGeojson(gj as WorldGeoJson)
-        setIndicators((ind as IndicatorsFile).indicators)
+        const file = ind as IndicatorsFile
+        setIndicators(file.indicators)
+        setRegions(file.regions)
       })
       .catch((e) => setError(String(e)))
   }, [])
@@ -121,6 +128,11 @@ function Atlas() {
     setSelectedCountry((prev) => (prev?.iso3 === iso3 ? null : { iso3, name }))
   }, [])
 
+  const handleSearchSelect = useCallback((iso3: string, name: string, lng: number, lat: number) => {
+    setSelectedCountry({ iso3, name })
+    globeRef.current?.flyTo(lng, lat)
+  }, [])
+
   if (error) {
     return (
       <div className="atlas-root atlas-error">
@@ -149,6 +161,7 @@ function Atlas() {
       </div>
 
       <WorldGlobe
+        ref={globeRef}
         geojson={geojson}
         data={rows}
         category={activeIndicator?.category ?? 'economy'}
@@ -165,6 +178,19 @@ function Atlas() {
         indicators={indicators}
         selected={selectedCode}
         onSelect={setSelectedCode}
+        dark={dark}
+      />
+
+      <SearchBar
+        geojson={geojson}
+        dark={dark}
+        onSelect={handleSearchSelect}
+      />
+
+      <ShareButton
+        indicatorName={activeIndicator?.name ?? ''}
+        year={activeYear}
+        countryName={selectedCountry?.name ?? null}
         dark={dark}
       />
 
@@ -197,6 +223,7 @@ function Atlas() {
           indicators={indicators}
           selectedCode={selectedCode}
           selectedYear={activeYear}
+          regions={regions}
           dark={dark}
           onClose={() => setSelectedCountry(null)}
         />
