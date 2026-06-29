@@ -128,7 +128,7 @@ export function IndicatorPicker({ indicators, selected, onSelect, dark }: Indica
                   onSelect(ind.code)
                   setOpen(false)
                 }}
-                title={`${ind.name} (${cat}, ${ind.year})`}
+                title={`${ind.name} (${cat}, ${ind.latestYear})`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

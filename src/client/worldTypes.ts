@@ -10,8 +10,9 @@ export type IndicatorDef = {
   name: string
   category: string
   unit: string
-  year: number
-  data: Record<string, number>
+  latestYear: number
+  years: number[]
+  data: Record<number, Record<string, number>>
 }
 
 export type IndicatorsFile = {

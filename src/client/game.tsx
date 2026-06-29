@@ -7,6 +7,7 @@ import { WorldGlobe } from './WorldGlobe'
 import { Legend } from './Legend'
 import { IndicatorPicker } from './IndicatorPicker'
 import { CountryConsole } from './CountryConsole'
+import { YearSlider } from './YearSlider'
 import { formatValue } from './formatValue'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef, MapRow } from './worldTypes'
 
@@ -40,10 +41,11 @@ function useDarkMode(): boolean {
   return dark
 }
 
-function indicatorToRows(ind: IndicatorDef, geojson: WorldGeoJson): MapRow[] {
+function indicatorToRows(ind: IndicatorDef, year: number, geojson: WorldGeoJson): MapRow[] {
+  const yearData = ind.data[year] ?? ind.data[ind.latestYear] ?? {}
   return geojson.features.map((f) => {
     const iso = f.properties.iso3.toUpperCase()
-    const val = ind.data[iso] ?? null
+    const val = yearData[iso] ?? null
     return {
       country_code: iso,
       country_name: f.properties.name,
@@ -57,6 +59,7 @@ function Atlas() {
   const [geojson, setGeojson] = useState<WorldGeoJson | null>(null)
   const [indicators, setIndicators] = useState<IndicatorDef[] | null>(null)
   const [selectedCode, setSelectedCode] = useState('NY.GDP.PCAP.CD')
+  const [selectedYear, setSelectedYear] = useState<number | null>(null)
   const [selectedCountry, setSelectedCountry] = useState<{ iso3: string; name: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const dark = useDarkMode()
@@ -84,18 +87,28 @@ function Atlas() {
     [indicators, selectedCode],
   )
 
+  const availableYears = useMemo(
+    () => activeIndicator?.years ?? [],
+    [activeIndicator],
+  )
+
+  const activeYear = selectedYear != null && availableYears.includes(selectedYear)
+    ? selectedYear
+    : activeIndicator?.latestYear ?? 2023
+
   const rows = useMemo(
-    () => (activeIndicator && geojson ? indicatorToRows(activeIndicator, geojson) : []),
-    [activeIndicator, geojson],
+    () => (activeIndicator && geojson ? indicatorToRows(activeIndicator, activeYear, geojson) : []),
+    [activeIndicator, activeYear, geojson],
   )
 
   const { vMin, vMax } = useMemo(() => {
-    const vals = Object.values(activeIndicator?.data ?? {}).filter(
+    const yearData = activeIndicator?.data[activeYear] ?? {}
+    const vals = Object.values(yearData).filter(
       (v): v is number => v != null && !Number.isNaN(v),
     )
     if (!vals.length) return { vMin: 0, vMax: 1 }
     return { vMin: Math.min(...vals), vMax: Math.max(...vals) }
-  }, [activeIndicator])
+  }, [activeIndicator, activeYear])
 
   const unit = activeIndicator?.unit ?? ''
   const code = activeIndicator?.code ?? ''
@@ -155,13 +168,22 @@ function Atlas() {
         dark={dark}
       />
 
+      {availableYears.length > 1 && (
+        <YearSlider
+          years={availableYears}
+          selected={activeYear}
+          onChange={setSelectedYear}
+          dark={dark}
+        />
+      )}
+
       {activeIndicator && (
         <Legend
           category={activeIndicator.category}
           vMin={vMin}
           vMax={vMax}
           indicatorName={activeIndicator.name}
-          year={activeIndicator.year}
+          year={activeYear}
           formatValue={fmt}
           dark={dark}
         />
@@ -174,7 +196,7 @@ function Atlas() {
           data={rows}
           indicators={indicators}
           selectedCode={selectedCode}
-          formatValue={fmt}
+          selectedYear={activeYear}
           dark={dark}
           onClose={() => setSelectedCountry(null)}
         />

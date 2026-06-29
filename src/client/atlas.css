@@ -5,12 +5,12 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: #0c0e1a;
+  background: #050508;
   color: #e0e0e0;
 }
 
 .atlas-root[data-dark="false"] {
-  background: #b8c6d4;
+  background: #e8e4dc;
   color: #222;
 }
 

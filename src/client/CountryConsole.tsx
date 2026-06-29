@@ -1,4 +1,57 @@
+import { formatValue } from './formatValue'
 import type { IndicatorDef, MapRow } from './worldTypes'
+
+function fmtForIndicator(v: number, ind: IndicatorDef): string {
+  return formatValue(v, ind.unit, ind.code)
+}
+
+function getTimeSeries(ind: IndicatorDef, iso3: string): { year: number; value: number }[] {
+  const series: { year: number; value: number }[] = []
+  for (const y of ind.years) {
+    const v = ind.data[y]?.[iso3]
+    if (v != null && !Number.isNaN(v)) series.push({ year: y, value: v })
+  }
+  return series
+}
+
+function MiniSparkline({ series, dark }: { series: { year: number; value: number }[]; dark: boolean }) {
+  if (series.length < 2) return null
+
+  const w = 80
+  const h = 24
+  const pad = 2
+  const vals = series.map((s) => s.value)
+  const min = Math.min(...vals)
+  const max = Math.max(...vals)
+  const range = max - min || 1
+
+  const points = series.map((s, i) => {
+    const x = pad + (i / (series.length - 1)) * (w - 2 * pad)
+    const y = h - pad - ((s.value - min) / range) * (h - 2 * pad)
+    return `${x},${y}`
+  })
+
+  const color = dark ? '#3b82f6' : '#2563eb'
+
+  return (
+    <svg width={w} height={h} style={{ flexShrink: 0 }}>
+      <polyline
+        points={points.join(' ')}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx={Number(points[points.length - 1]!.split(',')[0])}
+        cy={Number(points[points.length - 1]!.split(',')[1])}
+        r={2}
+        fill={color}
+      />
+    </svg>
+  )
+}
 
 export type CountryConsoleProps = {
   iso3: string
@@ -6,43 +59,74 @@ export type CountryConsoleProps = {
   data: MapRow[]
   indicators: IndicatorDef[]
   selectedCode: string
-  formatValue: (v: number) => string
+  selectedYear: number
   dark: boolean
   onClose: () => void
 }
 
-function StatRow({ label, value, dark }: { label: string; value: string; dark: boolean }) {
+function IndicatorRow({
+  ind,
+  iso3,
+  dark,
+}: {
+  ind: IndicatorDef
+  iso3: string
+  dark: boolean
+}) {
+  const border = dark ? '#2D2D2D' : '#E8E4DC'
+  const muted = dark ? '#8B8B8B' : '#525960'
+  const ink = dark ? '#E8E4DC' : '#0F0F0F'
+
+  const latestData = ind.data[ind.latestYear]
+  const v = latestData?.[iso3]
+  const formatted = v != null && !Number.isNaN(v) ? fmtForIndicator(v, ind) : '—'
+  const series = getTimeSeries(ind, iso3)
+
   return (
     <div
       style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '6px 0',
-        borderBottom: `1px solid ${dark ? '#2D2D2D' : '#E8E4DC'}`,
+        padding: '8px 0',
+        borderBottom: `1px solid ${border}`,
       }}
     >
-      <span
-        style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 9,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          color: dark ? '#8B8B8B' : '#525960',
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: 13,
-          color: dark ? '#E8E4DC' : '#0F0F0F',
-          fontWeight: 600,
-        }}
-      >
-        {value}
-      </span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: muted,
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {ind.name}
+        </span>
+        <span
+          style={{
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: 13,
+            color: ink,
+            fontWeight: 600,
+            flexShrink: 0,
+            marginLeft: 8,
+          }}
+        >
+          {formatted}
+        </span>
+      </div>
+      {series.length >= 2 && (
+        <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <MiniSparkline series={series} dark={dark} />
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: muted }}>
+            {series[0]!.year}–{series[series.length - 1]!.year}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -53,7 +137,7 @@ export function CountryConsole({
   data,
   indicators,
   selectedCode,
-  formatValue,
+  selectedYear,
   dark,
   onClose,
 }: CountryConsoleProps) {
@@ -70,18 +154,13 @@ export function CountryConsole({
     : '0 8px 32px rgba(0,0,0,0.12)'
 
   const mainValue =
-    row?.value != null && !Number.isNaN(row.value) ? formatValue(row.value) : 'No data'
+    row?.value != null && !Number.isNaN(row.value) && activeIndicator
+      ? fmtForIndicator(row.value, activeIndicator)
+      : 'No data'
 
-  const otherIndicators = indicators
-    .filter((i) => i.code !== selectedCode)
-    .map((ind) => {
-      const v = ind.data[iso3]
-      return {
-        name: ind.name,
-        year: ind.year,
-        value: v != null && !Number.isNaN(v) ? formatValue(v) : '—',
-      }
-    })
+  const activeSeries = activeIndicator ? getTimeSeries(activeIndicator, iso3) : []
+
+  const otherIndicators = indicators.filter((i) => i.code !== selectedCode)
 
   return (
     <div
@@ -205,8 +284,26 @@ export function CountryConsole({
             marginTop: 4,
           }}
         >
-          {activeIndicator?.code} · {activeIndicator?.year}
+          {activeIndicator?.code} · {selectedYear}
         </div>
+        {activeSeries.length >= 2 && (
+          <div style={{ marginTop: 10 }}>
+            <MiniSparkline series={activeSeries} dark={dark} />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 8,
+                color: muted,
+                marginTop: 2,
+              }}
+            >
+              <span>{activeSeries[0]!.year}</span>
+              <span>{activeSeries[activeSeries.length - 1]!.year}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div
@@ -233,7 +330,7 @@ export function CountryConsole({
           All indicators
         </div>
         {otherIndicators.map((ind) => (
-          <StatRow key={ind.name} label={ind.name} value={ind.value} dark={dark} />
+          <IndicatorRow key={ind.code} ind={ind} iso3={iso3} dark={dark} />
         ))}
       </div>
     </div>
