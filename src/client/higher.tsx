@@ -149,7 +149,17 @@ function HigherLowerApp() {
         setBestStreak((prev) => Math.max(prev, newStreak))
         const nextRound = pickRound(indicators, geojson, currentRound.right.iso3)
         if (nextRound) {
-          nextRound.left = currentRound.right
+          const carryIso = currentRound.right.iso3
+          const newYearData = nextRound.indicator.data[nextRound.indicator.latestYear]
+          const newValue = newYearData?.[carryIso]
+          if (newValue != null && !Number.isNaN(newValue)) {
+            nextRound.left = {
+              iso3: carryIso,
+              name: currentRound.right.name,
+              value: newValue,
+              formatted: formatValue(newValue, nextRound.indicator.unit, nextRound.indicator.code),
+            }
+          }
         }
         setCurrentRound(nextRound)
         setGameState('playing')
