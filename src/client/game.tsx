@@ -1,7 +1,7 @@
 import './index.css'
 import './atlas.css'
 
-import { StrictMode, useCallback, useEffect, useState, useMemo, useRef, type MouseEvent } from 'react'
+import { StrictMode, useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { createRoot } from 'react-dom/client'
 import { WorldGlobe } from './WorldGlobe'
 import type { WorldGlobeHandle } from './WorldGlobe'
@@ -12,6 +12,7 @@ import { YearSlider } from './YearSlider'
 import { SearchBar } from './SearchBar'
 import { ShareButton } from './ShareButton'
 import { formatValue } from './formatValue'
+import { FONT } from './theme'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef, MapRow } from './worldTypes'
 
 function useDarkMode(): boolean {
@@ -26,19 +27,12 @@ function useDarkMode(): boolean {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const handler = (e: MediaQueryListEvent) => setDark(e.matches)
     mq.addEventListener('change', handler)
-
     const observer = new MutationObserver(() => {
       const el = document.documentElement
-      if (el.classList.contains('dark') || el.getAttribute('data-theme') === 'dark') {
-        setDark(true)
-      }
+      if (el.classList.contains('dark') || el.getAttribute('data-theme') === 'dark') setDark(true)
     })
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] })
-
-    return () => {
-      mq.removeEventListener('change', handler)
-      observer.disconnect()
-    }
+    return () => { mq.removeEventListener('change', handler); observer.disconnect() }
   }, [])
 
   return dark
@@ -48,13 +42,7 @@ function indicatorToRows(ind: IndicatorDef, year: number, geojson: WorldGeoJson)
   const yearData = ind.data[year] ?? ind.data[ind.latestYear] ?? {}
   return geojson.features.map((f) => {
     const iso = f.properties.iso3.toUpperCase()
-    const val = yearData[iso] ?? null
-    return {
-      country_code: iso,
-      country_name: f.properties.name,
-      value: val,
-      region: null,
-    }
+    return { country_code: iso, country_name: f.properties.name, value: yearData[iso] ?? null, region: null }
   })
 }
 
@@ -71,14 +59,8 @@ function Atlas() {
 
   useEffect(() => {
     void Promise.all([
-      fetch('/data/world.geojson').then((r) => {
-        if (!r.ok) throw new Error(`GeoJSON: ${r.status}`)
-        return r.json()
-      }),
-      fetch('/data/indicators.json').then((r) => {
-        if (!r.ok) throw new Error(`Indicators: ${r.status}`)
-        return r.json()
-      }),
+      fetch('/data/world.geojson').then((r) => { if (!r.ok) throw new Error(`GeoJSON: ${r.status}`); return r.json() }),
+      fetch('/data/indicators.json').then((r) => { if (!r.ok) throw new Error(`Indicators: ${r.status}`); return r.json() }),
     ])
       .then(([gj, ind]) => {
         setGeojson(gj as WorldGeoJson)
@@ -94,14 +76,10 @@ function Atlas() {
     [indicators, selectedCode],
   )
 
-  const availableYears = useMemo(
-    () => activeIndicator?.years ?? [],
-    [activeIndicator],
-  )
+  const availableYears = useMemo(() => activeIndicator?.years ?? [], [activeIndicator])
 
   const activeYear = selectedYear != null && availableYears.includes(selectedYear)
-    ? selectedYear
-    : activeIndicator?.latestYear ?? 2023
+    ? selectedYear : activeIndicator?.latestYear ?? 2023
 
   const rows = useMemo(
     () => (activeIndicator && geojson ? indicatorToRows(activeIndicator, activeYear, geojson) : []),
@@ -123,10 +101,7 @@ function Atlas() {
 
   const unit = activeIndicator?.unit ?? ''
   const code = activeIndicator?.code ?? ''
-  const fmt = useCallback(
-    (v: number) => (unit ? formatValue(v, unit, code) : String(v)),
-    [unit, code],
-  )
+  const fmt = useCallback((v: number) => (unit ? formatValue(v, unit, code) : String(v)), [unit, code])
 
   const handleCountryClick = useCallback((iso3: string, name: string) => {
     setSelectedCountry((prev) => (prev?.iso3 === iso3 ? null : { iso3, name }))
@@ -159,97 +134,43 @@ function Atlas() {
     <div className="atlas-root" data-dark={dark}>
       <div className="atlas-header">
         <div className="atlas-brand">
-          <span
-            className="atlas-brand-link"
-            role="button"
-            tabIndex={0}
-            title="r/Res_Publica_DE"
-            onClick={(e: MouseEvent) => {
-              e.preventDefault()
-              void navigator.clipboard.writeText('https://www.reddit.com/r/Res_Publica_DE/')
-            }}
-          >
+          <span className="atlas-brand-link" role="button" tabIndex={0} title="r/Res_Publica_DE"
+            onClick={() => { void navigator.clipboard.writeText('https://www.reddit.com/r/Res_Publica_DE/') }}>
             <span className="atlas-brand-name">World Atlas</span>
-            <span className="atlas-brand-by">by r/Res_Publica_DE</span>
+            <span className="atlas-brand-by" style={{ fontFamily: FONT.mono }}>by r/Res_Publica_DE</span>
           </span>
         </div>
       </div>
 
-      <WorldGlobe
-        ref={globeRef}
-        geojson={geojson}
-        data={rows}
-        category={activeIndicator?.category ?? 'economy'}
-        vMin={vMin}
-        vMax={vMax}
-        unit={unit}
-        indicatorName={activeIndicator?.name ?? ''}
-        scaleType={activeIndicator?.scale ?? 'linear'}
-        formatValue={fmt}
-        dark={dark}
-        onCountryClick={handleCountryClick}
-      />
+      <WorldGlobe ref={globeRef} geojson={geojson} data={rows}
+        category={activeIndicator?.category ?? 'economy'} vMin={vMin} vMax={vMax}
+        unit={unit} indicatorName={activeIndicator?.name ?? ''}
+        scaleType={activeIndicator?.scale ?? 'linear'} formatValue={fmt}
+        dark={dark} onCountryClick={handleCountryClick} />
 
-      <IndicatorPicker
-        indicators={indicators}
-        selected={selectedCode}
-        onSelect={setSelectedCode}
-        dark={dark}
-      />
-
-      <SearchBar
-        geojson={geojson}
-        dark={dark}
-        onSelect={handleSearchSelect}
-      />
-
-      <ShareButton
-        indicatorName={activeIndicator?.name ?? ''}
-        year={activeYear}
-        countryName={selectedCountry?.name ?? null}
-        dark={dark}
-      />
+      <IndicatorPicker indicators={indicators} selected={selectedCode} onSelect={setSelectedCode} dark={dark} />
+      <SearchBar geojson={geojson} dark={dark} onSelect={handleSearchSelect} />
+      <ShareButton indicatorName={activeIndicator?.name ?? ''} year={activeYear}
+        countryName={selectedCountry?.name ?? null} dark={dark} />
 
       {availableYears.length > 1 && (
-        <YearSlider
-          years={availableYears}
-          selected={activeYear}
-          onChange={setSelectedYear}
-          dark={dark}
-        />
+        <YearSlider years={availableYears} selected={activeYear} onChange={setSelectedYear} dark={dark} />
       )}
 
       {activeIndicator && (
-        <Legend
-          category={activeIndicator.category}
-          vMin={vMin}
-          vMax={vMax}
-          indicatorName={activeIndicator.name}
-          year={activeYear}
-          formatValue={fmt}
-          dark={dark}
-        />
+        <Legend category={activeIndicator.category} vMin={vMin} vMax={vMax}
+          indicatorName={activeIndicator.name} year={activeYear} formatValue={fmt} dark={dark} />
       )}
 
       {selectedCountry && (
-        <CountryConsole
-          iso3={selectedCountry.iso3}
-          countryName={selectedCountry.name}
-          data={rows}
-          indicators={indicators}
-          selectedCode={selectedCode}
-          selectedYear={activeYear}
-          regions={regions}
-          dark={dark}
-          onClose={() => setSelectedCountry(null)}
-        />
+        <CountryConsole iso3={selectedCountry.iso3} countryName={selectedCountry.name}
+          data={rows} indicators={indicators} selectedCode={selectedCode} selectedYear={activeYear}
+          regions={regions} dark={dark} onClose={() => setSelectedCountry(null)} />
       )}
     </div>
   )
 }
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <Atlas />
-  </StrictMode>,
+  <StrictMode><Atlas /></StrictMode>,
 )

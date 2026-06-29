@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { getTheme, FONT } from './theme'
 import type { WorldGeoJson } from './worldTypes'
 
 const COUNTRY_CENTROIDS: Record<string, [number, number]> = {
@@ -15,6 +16,7 @@ export function SearchBar({ geojson, dark, onSelect }: SearchBarProps) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const t = getTheme(dark)
 
   const countries = useMemo(
     () => geojson.features.map((f) => ({
@@ -35,120 +37,54 @@ export function SearchBar({ geojson, dark, onSelect }: SearchBarProps) {
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-        setQuery('')
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setQuery('') }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const bg = dark ? 'rgba(26,26,26,0.95)' : 'rgba(255,255,255,0.95)'
-  const border = dark ? '#2D2D2D' : '#E8E4DC'
-  const text = dark ? '#E8E4DC' : '#0F0F0F'
-  const muted = dark ? '#8B8B8B' : '#525960'
-  const hoverBg = dark ? '#222222' : '#EDE8DF'
-
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        style={{
-          position: 'absolute',
-          top: 10,
-          right: 48,
-          zIndex: 25,
-          width: 32,
-          height: 32,
-          borderRadius: 6,
-          border: `1px solid ${border}`,
-          background: bg,
-          backdropFilter: 'blur(8px)',
-          color: muted,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 14,
-        }}
-        title="Search country"
-      >
-        ⌕
-      </button>
+      <button onClick={() => setOpen(true)} style={{
+        position: 'absolute', top: 10, right: 48, zIndex: 25,
+        width: 32, height: 32, borderRadius: 6, border: `1px solid ${t.border}`,
+        background: t.bg, backdropFilter: 'blur(8px)', color: t.muted,
+        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+      }} title="Search country">⌕</button>
     )
   }
 
   return (
-    <div
-      ref={ref}
-      style={{
-        position: 'absolute',
-        top: 10,
-        right: 48,
-        zIndex: 25,
-        width: 240,
-        maxWidth: 'calc(100vw - 120px)',
-      }}
-    >
-      <input
-        autoFocus
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
+    <div ref={ref} style={{ position: 'absolute', top: 10, right: 48, zIndex: 25, width: 240, maxWidth: 'calc(100vw - 120px)' }}>
+      <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
         placeholder="Search country..."
         style={{
-          width: '100%',
-          padding: '7px 10px',
-          borderRadius: 8,
-          border: `1px solid ${border}`,
-          background: bg,
-          backdropFilter: 'blur(8px)',
-          color: text,
-          fontFamily: "'Source Serif 4', serif, system-ui",
-          fontSize: 12,
-          outline: 'none',
-          boxSizing: 'border-box',
-        }}
-      />
+          width: '100%', padding: '7px 10px', borderRadius: 8, border: `1px solid ${t.border}`,
+          background: t.bg, backdropFilter: 'blur(8px)', color: t.ink,
+          fontFamily: FONT.body, fontSize: 12, outline: 'none', boxSizing: 'border-box',
+        }} />
       {filtered.length > 0 && (
-        <div
-          style={{
-            marginTop: 4,
-            background: bg,
-            borderRadius: 8,
-            border: `1px solid ${border}`,
-            backdropFilter: 'blur(12px)',
-            maxHeight: 240,
-            overflowY: 'auto',
-            boxShadow: dark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.12)',
-          }}
-        >
+        <div style={{
+          marginTop: 4, background: t.bg, borderRadius: 8, border: `1px solid ${t.border}`,
+          backdropFilter: 'blur(12px)', maxHeight: 240, overflowY: 'auto', boxShadow: t.shadow,
+        }}>
           {filtered.map((c) => (
-            <button
-              key={c.iso3}
+            <button key={c.iso3}
               onClick={() => {
                 const coords = COUNTRY_CENTROIDS[c.iso3]
                 if (coords) onSelect(c.iso3, c.name, coords[0], coords[1])
-                setOpen(false)
-                setQuery('')
+                setOpen(false); setQuery('')
               }}
               style={{
-                display: 'block',
-                width: '100%',
-                padding: '6px 10px',
-                border: 'none',
-                background: 'transparent',
-                color: text,
-                fontFamily: "'Source Serif 4', serif, system-ui",
-                fontSize: 12,
-                textAlign: 'left',
-                cursor: 'pointer',
+                display: 'block', width: '100%', padding: '6px 10px', border: 'none',
+                background: 'transparent', color: t.ink, fontFamily: FONT.body,
+                fontSize: 12, textAlign: 'left', cursor: 'pointer',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = hoverBg }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = t.hoverBg }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
             >
               <span style={{ fontWeight: 600 }}>{c.name}</span>
-              <span style={{ color: muted, marginLeft: 6, fontFamily: "'IBM Plex Mono', monospace", fontSize: 9 }}>{c.iso3}</span>
+              <span style={{ color: t.muted, marginLeft: 6, fontFamily: FONT.mono, fontSize: 9 }}>{c.iso3}</span>
             </button>
           ))}
         </div>

@@ -30,7 +30,7 @@ export type IndicatorsFile = {
 
 export type GeoJsonFeature = {
   type: 'Feature'
-  properties: { iso3: string; iso2?: string; name: string }
+  properties: { iso3: string; name: string }
   geometry: { type: string; coordinates: unknown }
 }
 
