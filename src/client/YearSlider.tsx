@@ -33,10 +33,10 @@ export function YearSlider({ years, selected, onChange, dark }: YearSliderProps)
     }
   }, [playing, years, onChange])
 
-  const bg = dark ? 'rgba(20,20,30,0.92)' : 'rgba(255,255,255,0.95)'
-  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const bg = dark ? 'rgba(26,26,26,0.95)' : 'rgba(255,255,255,0.95)'
+  const border = dark ? '#2D2D2D' : '#E8E4DC'
   const muted = dark ? '#8B8B8B' : '#525960'
-  const active = '#3b82f6'
+  const active = dark ? '#E8384F' : '#C8102E'
 
   const handlePlay = () => {
     if (playing) {

@@ -45,13 +45,14 @@ export function IndicatorPicker({ indicators, selected, onSelect, dark }: Indica
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const bg = dark ? 'rgba(20,20,30,0.92)' : 'rgba(255,255,255,0.95)'
-  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
-  const text = dark ? '#e0e0e0' : '#222'
-  const muted = dark ? '#888' : '#999'
-  const activeBg = dark ? 'rgba(59,130,246,0.25)' : 'rgba(59,130,246,0.12)'
-  const activeBorder = '#3b82f6'
-  const hoverBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
+  const bg = dark ? 'rgba(26,26,26,0.95)' : 'rgba(255,255,255,0.95)'
+  const border = dark ? '#2D2D2D' : '#E8E4DC'
+  const text = dark ? '#E8E4DC' : '#0F0F0F'
+  const muted = dark ? '#8B8B8B' : '#525960'
+  const red = dark ? '#E8384F' : '#C8102E'
+  const activeBg = dark ? 'rgba(232,56,79,0.15)' : 'rgba(200,16,46,0.1)'
+  const activeBorder = red
+  const hoverBg = dark ? '#222222' : '#EDE8DF'
 
   return (
     <div ref={ref} style={{ position: 'absolute', top: 52, left: 10, zIndex: 20 }}>
@@ -68,7 +69,7 @@ export function IndicatorPicker({ indicators, selected, onSelect, dark }: Indica
           backdropFilter: 'blur(8px)',
           color: text,
           cursor: 'pointer',
-          fontFamily: 'system-ui, sans-serif',
+          fontFamily: "'Source Serif 4', serif, system-ui",
           fontSize: 12,
           fontWeight: 600,
           whiteSpace: 'nowrap',
@@ -139,7 +140,7 @@ export function IndicatorPicker({ indicators, selected, onSelect, dark }: Indica
                   background: isActive ? activeBg : 'transparent',
                   color: isActive ? (dark ? '#fff' : '#111') : text,
                   cursor: 'pointer',
-                  fontFamily: 'system-ui, sans-serif',
+                  fontFamily: "'Source Serif 4', serif, system-ui",
                   fontSize: 12,
                   textAlign: 'left',
                   whiteSpace: 'nowrap',
@@ -163,7 +164,7 @@ export function IndicatorPicker({ indicators, selected, onSelect, dark }: Indica
                     fontSize: 10,
                     fontWeight: 700,
                     background: isActive
-                      ? activeBorder
+                      ? red
                       : dark
                         ? 'rgba(255,255,255,0.08)'
                         : 'rgba(0,0,0,0.06)',

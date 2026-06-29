@@ -5,6 +5,12 @@ export type MapRow = {
   region: string | null
 }
 
+export type IndicatorMeta = {
+  description: string
+  source: string
+  interpretation: string
+}
+
 export type IndicatorDef = {
   code: string
   name: string
@@ -13,6 +19,7 @@ export type IndicatorDef = {
   latestYear: number
   years: number[]
   data: Record<number, Record<string, number>>
+  meta?: IndicatorMeta
 }
 
 export type IndicatorsFile = {

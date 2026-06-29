@@ -109,13 +109,17 @@ function Atlas() {
   )
 
   const { vMin, vMax } = useMemo(() => {
-    const yearData = activeIndicator?.data[activeYear] ?? {}
-    const vals = Object.values(yearData).filter(
-      (v): v is number => v != null && !Number.isNaN(v),
-    )
-    if (!vals.length) return { vMin: 0, vMax: 1 }
-    return { vMin: Math.min(...vals), vMax: Math.max(...vals) }
-  }, [activeIndicator, activeYear])
+    if (!activeIndicator) return { vMin: 0, vMax: 1 }
+    const allVals: number[] = []
+    for (const y of activeIndicator.years) {
+      const yearData = activeIndicator.data[y] ?? {}
+      for (const v of Object.values(yearData)) {
+        if (v != null && !Number.isNaN(v)) allVals.push(v)
+      }
+    }
+    if (!allVals.length) return { vMin: 0, vMax: 1 }
+    return { vMin: Math.min(...allVals), vMax: Math.max(...allVals) }
+  }, [activeIndicator])
 
   const unit = activeIndicator?.unit ?? ''
   const code = activeIndicator?.code ?? ''

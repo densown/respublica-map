@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { formatValue } from './formatValue'
+import { IndicatorInfoButton } from './IndicatorInfo'
 import type { IndicatorDef, MapRow } from './worldTypes'
 
 function fmtForIndicator(v: number, ind: IndicatorDef): string {
@@ -158,7 +160,7 @@ function IndicatorRow({
 
   return (
     <div style={{ padding: '8px 0', borderBottom: `1px solid ${border}` }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
         <span
           style={{
             fontFamily: "'IBM Plex Mono', monospace",
@@ -175,14 +177,14 @@ function IndicatorRow({
         >
           {ind.name}
         </span>
+        <IndicatorInfoButton indicator={ind} dark={dark} />
         <span
           style={{
-            fontFamily: 'system-ui, sans-serif',
+            fontFamily: "'Source Serif 4', serif, system-ui",
             fontSize: 13,
             color: ink,
             fontWeight: 600,
             flexShrink: 0,
-            marginLeft: 8,
           }}
         >
           {formatted}
@@ -213,6 +215,7 @@ export function CountryConsole({
   dark,
   onClose,
 }: CountryConsoleProps) {
+  const [expanded, setExpanded] = useState(false)
   const activeIndicator = indicators.find((i) => i.code === selectedCode) ?? indicators[0]
   const row = data.find((r) => r.country_code.toUpperCase() === iso3)
 
@@ -251,7 +254,7 @@ export function CountryConsole({
         }}
       />
       <div
-        className="atlas-console"
+        className={`atlas-console${expanded ? ' atlas-console-expanded' : ''}`}
         style={{
           position: 'absolute',
           zIndex: 30,
@@ -269,14 +272,20 @@ export function CountryConsole({
             flexShrink: 0,
           }}
         >
-          {/* Drag handle on mobile */}
           <div className="atlas-console-handle" style={{
-            width: 36,
-            height: 4,
-            borderRadius: 2,
-            background: dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             margin: '0 auto 10px',
-          }} />
+            cursor: 'pointer',
+          }} onClick={() => setExpanded(!expanded)}>
+            <div style={{
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              background: dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+            }} />
+          </div>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
               <h2
@@ -309,28 +318,52 @@ export function CountryConsole({
                 {iso3}{region ? ` · ${region}` : ''}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                width: 28,
-                height: 28,
-                border: `1px solid ${border}`,
-                borderRadius: 4,
-                background: 'transparent',
-                color: muted,
-                cursor: 'pointer',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 11,
-                lineHeight: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              ✕
-            </button>
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+              <button
+                type="button"
+                className="atlas-console-expand-btn"
+                onClick={() => setExpanded(!expanded)}
+                style={{
+                  width: 28,
+                  height: 28,
+                  border: `1px solid ${border}`,
+                  borderRadius: 4,
+                  background: 'transparent',
+                  color: muted,
+                  cursor: 'pointer',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 11,
+                  lineHeight: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                title={expanded ? 'Collapse' : 'Expand'}
+              >
+                {expanded ? '↓' : '↑'}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  width: 28,
+                  height: 28,
+                  border: `1px solid ${border}`,
+                  borderRadius: 4,
+                  background: 'transparent',
+                  color: muted,
+                  cursor: 'pointer',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 11,
+                  lineHeight: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
         </div>
 
@@ -349,9 +382,15 @@ export function CountryConsole({
               textTransform: 'uppercase',
               color: muted,
               marginBottom: 4,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
             }}
           >
-            {activeIndicator?.name ?? 'Indicator'}
+            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {activeIndicator?.name ?? 'Indicator'}
+            </span>
+            {activeIndicator && <IndicatorInfoButton indicator={activeIndicator} dark={dark} />}
           </div>
           <div
             style={{
@@ -367,10 +406,11 @@ export function CountryConsole({
           </div>
           <div
             style={{
-              fontFamily: 'system-ui, sans-serif',
-              fontSize: 11,
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9,
               color: muted,
               marginTop: 4,
+              letterSpacing: '0.05em',
             }}
           >
             {activeIndicator?.code} · {selectedYear}

@@ -44,11 +44,11 @@ export function SearchBar({ geojson, dark, onSelect }: SearchBarProps) {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const bg = dark ? 'rgba(20,20,30,0.92)' : 'rgba(255,255,255,0.95)'
-  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
-  const text = dark ? '#e0e0e0' : '#222'
+  const bg = dark ? 'rgba(26,26,26,0.95)' : 'rgba(255,255,255,0.95)'
+  const border = dark ? '#2D2D2D' : '#E8E4DC'
+  const text = dark ? '#E8E4DC' : '#0F0F0F'
   const muted = dark ? '#8B8B8B' : '#525960'
-  const hoverBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
+  const hoverBg = dark ? '#222222' : '#EDE8DF'
 
   if (!open) {
     return (
@@ -104,7 +104,7 @@ export function SearchBar({ geojson, dark, onSelect }: SearchBarProps) {
           background: bg,
           backdropFilter: 'blur(8px)',
           color: text,
-          fontFamily: 'system-ui, sans-serif',
+          fontFamily: "'Source Serif 4', serif, system-ui",
           fontSize: 12,
           outline: 'none',
           boxSizing: 'border-box',
@@ -139,7 +139,7 @@ export function SearchBar({ geojson, dark, onSelect }: SearchBarProps) {
                 border: 'none',
                 background: 'transparent',
                 color: text,
-                fontFamily: 'system-ui, sans-serif',
+                fontFamily: "'Source Serif 4', serif, system-ui",
                 fontSize: 12,
                 textAlign: 'left',
                 cursor: 'pointer',

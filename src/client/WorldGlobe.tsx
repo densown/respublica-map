@@ -5,10 +5,10 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { worldFillColor } from './worldColors'
 import type { MapRow, WorldGeoJson } from './worldTypes'
 
-const NODATA_DARK = '#2a2a3a'
-const NODATA_LIGHT = '#d5d5d5'
-const WATER_DARK = '#0c0e1a'
-const WATER_LIGHT = '#b8c6d4'
+const NODATA_DARK = '#2D2D2D'
+const NODATA_LIGHT = '#D0CBC2'
+const WATER_DARK = '#0A0A0A'
+const WATER_LIGHT = '#C8D6E0'
 
 function normIso(s: string): string {
   return s.trim().toUpperCase()
@@ -187,9 +187,9 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
         const val =
           row?.value != null && !Number.isNaN(row.value) ? fmtRef.current(row.value) : 'No data'
 
-        const html = `<div style="font-family:system-ui,sans-serif;font-size:13px;color:#f4f4f5;min-width:120px">
-          <div style="font-weight:700;margin-bottom:3px;color:#fff">${escHtml(String(name))}</div>
-          <div style="font-family:monospace;font-size:12px">${escHtml(val)}</div>
+        const html = `<div style="font-family:'Source Serif 4',serif,system-ui;font-size:13px;color:#E8E4DC;min-width:120px">
+          <div style="font-family:'Playfair Display',serif;font-weight:900;margin-bottom:3px;color:#E8E4DC">${escHtml(String(name))}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8B8B">${escHtml(val)}</div>
         </div>`
         popupRef.current!.setLngLat(e.lngLat).setHTML(html).addTo(map)
         map.getCanvas().style.cursor = 'pointer'
