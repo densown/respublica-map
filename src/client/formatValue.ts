@@ -30,6 +30,10 @@ export function formatValue(value: number, unit: string, code: string): string {
     return `${fmtFixed(value, 1)} yr`
   }
 
+  if (u.includes('births per woman')) {
+    return fmtFixed(value, 2)
+  }
+
   if (abs < 1 && abs > 0) {
     return fmtFixed(value, 2)
   }

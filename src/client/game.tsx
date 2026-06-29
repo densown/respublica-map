@@ -165,7 +165,8 @@ function Atlas() {
       {selectedCountry && (
         <CountryConsole iso3={selectedCountry.iso3} countryName={selectedCountry.name}
           data={rows} indicators={indicators} selectedCode={selectedCode} selectedYear={activeYear}
-          regions={regions} dark={dark} onClose={() => setSelectedCountry(null)} />
+          regions={regions} geojson={geojson} dark={dark} onClose={() => setSelectedCountry(null)}
+          onSelectCode={setSelectedCode} onSelectYear={setSelectedYear} />
       )}
     </div>
   )

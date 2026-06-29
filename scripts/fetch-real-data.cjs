@@ -85,29 +85,55 @@ const WB_INDICATORS = [
     }
   },
   {
-    code: 'SI.POV.GINI',
-    wbCode: 'SI.POV.GINI',
-    name: 'Gini Index',
-    category: 'inequality',
-    unit: 'index (0-100)',
+    code: 'FP.CPI.TOTL.ZG',
+    wbCode: 'FP.CPI.TOTL.ZG',
+    name: 'Inflation rate',
+    category: 'economy',
+    unit: '% annual',
     scale: 'linear',
     meta: {
-      description: 'Measures income inequality within a country. 0 represents perfect equality, 100 represents maximum inequality.',
-      source: 'World Bank, Development Research Group',
-      interpretation: 'Below 30: low inequality (Nordic countries). 30-40: moderate. Above 40: high inequality. Above 50: extreme inequality.'
+      description: 'Annual percentage change in consumer prices. Reflects the rate at which purchasing power is eroded.',
+      source: 'International Monetary Fund via World Bank',
+      interpretation: 'Central banks typically target 2%. Above 10% is considered high inflation. Hyperinflation exceeds 50% monthly.'
     }
   },
   {
-    code: 'VC.IHR.PSRC.P5',
-    wbCode: 'VC.IHR.PSRC.P5',
-    name: 'Intentional homicides',
-    category: 'security',
-    unit: 'per 100,000 people',
+    code: 'SL.UEM.TOTL.ZS',
+    wbCode: 'SL.UEM.TOTL.ZS',
+    name: 'Unemployment rate',
+    category: 'economy',
+    unit: '% of labor force',
+    scale: 'linear',
+    meta: {
+      description: 'Share of the labor force that is without work but available and seeking employment (ILO modeled estimate).',
+      source: 'International Labour Organization via World Bank',
+      interpretation: 'Below 5% is considered full employment. 5-10% is moderate. Above 15% signals serious economic distress.'
+    }
+  },
+  {
+    code: 'GC.DOD.TOTL.GD.ZS',
+    wbCode: 'GC.DOD.TOTL.GD.ZS',
+    name: 'Government debt',
+    category: 'economy',
+    unit: '% of GDP',
     scale: 'log',
     meta: {
-      description: 'Unlawful homicides purposely inflicted as a result of domestic disputes, interpersonal violence, violent conflicts, or gang activity.',
-      source: 'UN Office on Drugs and Crime (UNODC)',
-      interpretation: 'Measured per 100,000 people. Below 2: very safe. 2-10: moderate. Above 10: elevated violence. Some countries exceed 50.'
+      description: 'Central government debt as percentage of GDP. Includes domestic and foreign liabilities.',
+      source: 'World Bank, International Monetary Fund',
+      interpretation: 'Below 60% is generally considered sustainable (EU Maastricht criterion). Japan exceeds 250%, the US is above 120%.'
+    }
+  },
+  {
+    code: 'SP.DYN.TFRT.IN',
+    wbCode: 'SP.DYN.TFRT.IN',
+    name: 'Fertility rate',
+    category: 'health',
+    unit: 'births per woman',
+    scale: 'linear',
+    meta: {
+      description: 'Total fertility rate: average number of children a woman would bear over her lifetime under current age-specific rates.',
+      source: 'UN Population Division via World Bank',
+      interpretation: '2.1 is replacement level. Below 1.5 indicates demographic decline. Above 4 is common in Sub-Saharan Africa.'
     }
   },
   {
