@@ -1,7 +1,7 @@
 import './index.css'
 import './atlas.css'
 
-import { StrictMode, useCallback, useEffect, useState, useMemo, useRef } from 'react'
+import { StrictMode, useCallback, useEffect, useState, useMemo, useRef, type MouseEvent } from 'react'
 import { createRoot } from 'react-dom/client'
 import { WorldGlobe } from './WorldGlobe'
 import type { WorldGlobeHandle } from './WorldGlobe'
@@ -159,15 +159,19 @@ function Atlas() {
     <div className="atlas-root" data-dark={dark}>
       <div className="atlas-header">
         <div className="atlas-brand">
-          <a
-            href="https://www.reddit.com/r/Res_Publica_DE/"
-            target="_blank"
-            rel="noopener noreferrer"
+          <span
             className="atlas-brand-link"
+            role="button"
+            tabIndex={0}
+            title="r/Res_Publica_DE"
+            onClick={(e: MouseEvent) => {
+              e.preventDefault()
+              void navigator.clipboard.writeText('https://www.reddit.com/r/Res_Publica_DE/')
+            }}
           >
             <span className="atlas-brand-name">World Atlas</span>
-            <span className="atlas-brand-by">by Res.Publica</span>
-          </a>
+            <span className="atlas-brand-by">by r/Res_Publica_DE</span>
+          </span>
         </div>
       </div>
 

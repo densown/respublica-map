@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { formatValue } from './formatValue'
 import { IndicatorInfoButton } from './IndicatorInfo'
 import type { IndicatorDef, MapRow } from './worldTypes'
@@ -119,6 +119,77 @@ function PercentileBar({ rank, total, dark }: { rank: number; total: number; dar
       }}>
         #{rank}/{total}
       </span>
+    </div>
+  )
+}
+
+function CopyLinkButton({ label, url, bg, color, border: btnBorder, font, fontSize }: {
+  label: string; url: string; bg: string; color: string; border: string; font: string; fontSize: number
+}) {
+  const [copied, setCopied] = useState(false)
+
+  const handleClick = useCallback(() => {
+    void navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }, [url])
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        padding: '8px 12px',
+        borderRadius: 6,
+        background: bg,
+        color,
+        border: btnBorder,
+        fontFamily: font,
+        fontSize,
+        fontWeight: 600,
+        cursor: 'pointer',
+        letterSpacing: '0.02em',
+        transition: 'opacity 0.15s',
+      }}
+    >
+      {copied ? 'Link copied!' : label}
+    </button>
+  )
+}
+
+function PromoFooter({ dark, border, red, muted }: { dark: boolean; border: string; red: string; muted: string }) {
+  return (
+    <div style={{
+      marginTop: 16,
+      padding: '12px 0 4px',
+      borderTop: `1px solid ${border}`,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
+    }}>
+      <CopyLinkButton
+        label="r/Res_Publica_DE"
+        url="https://www.reddit.com/r/Res_Publica_DE/"
+        bg={red}
+        color="#fff"
+        border="none"
+        font="'Source Serif 4', serif, system-ui"
+        fontSize={12}
+      />
+      <CopyLinkButton
+        label="Full dashboard: app.respublica.media"
+        url="https://app.respublica.media"
+        bg="transparent"
+        color={muted}
+        border={`1px solid ${border}`}
+        font="'IBM Plex Mono', monospace"
+        fontSize={10}
+      />
     </div>
   )
 }
@@ -465,59 +536,7 @@ export function CountryConsole({
             <IndicatorRow key={ind.code} ind={ind} iso3={iso3} year={selectedYear} regions={regions} dark={dark} />
           ))}
 
-          <div style={{
-            marginTop: 16,
-            padding: '12px 0 4px',
-            borderTop: `1px solid ${border}`,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-          }}>
-            <a
-              href="https://www.reddit.com/r/Res_Publica_DE/"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                padding: '8px 12px',
-                borderRadius: 6,
-                background: red,
-                color: '#fff',
-                fontFamily: "'Source Serif 4', serif, system-ui",
-                fontSize: 12,
-                fontWeight: 600,
-                textDecoration: 'none',
-                letterSpacing: '0.02em',
-              }}
-            >
-              Join r/Res_Publica_DE
-            </a>
-            <a
-              href="https://app.respublica.media"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                padding: '7px 12px',
-                borderRadius: 6,
-                border: `1px solid ${border}`,
-                background: 'transparent',
-                color: muted,
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 10,
-                textDecoration: 'none',
-                letterSpacing: '0.03em',
-              }}
-            >
-              Explore full dashboard on app.respublica.media
-            </a>
-          </div>
+          <PromoFooter dark={dark} border={border} red={red} muted={muted} />
         </div>
       </div>
     </>
