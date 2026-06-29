@@ -230,10 +230,10 @@ function QuizApp() {
         <RulesOverlay
           title="Guess Country"
           rules={[
-            'Dir werden 4 Statistiken eines Landes gezeigt.',
-            'Wähle aus 4 Optionen das richtige Land.',
-            '10 Runden — alle Spieler bekommen heute die gleichen Fragen.',
-            'Teile dein Ergebnis am Ende!',
+            'You are shown 4 statistics of a mystery country.',
+            'Pick the correct country from 4 options.',
+            '10 rounds — all players get the same questions today.',
+            'Share your score at the end!',
           ]}
           onClose={() => setShowRules(false)}
         />

@@ -258,10 +258,10 @@ function SortApp() {
         <RulesOverlay
           title="Rank It"
           rules={[
-            'Dir werden 4 Länder und ein Indikator gezeigt.',
-            'Tippe die Länder in der richtigen Reihenfolge an — höchster Wert zuerst.',
-            'Du kannst eine Auswahl rückgängig machen, indem du sie erneut antippst.',
-            '10 Runden — alle Spieler bekommen heute die gleichen Fragen.',
+            'You are shown 4 countries and one indicator.',
+            'Tap the countries in order — highest value first.',
+            'Changed your mind? Tap again to deselect.',
+            '10 rounds — all players get the same questions today.',
           ]}
           onClose={() => setShowRules(false)}
         />

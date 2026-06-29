@@ -59,7 +59,7 @@ export function RulesOverlay({ title, rules, onClose }: RulesOverlayProps) {
             cursor: 'pointer',
           }}
         >
-          Los geht's
+          Let's go
         </button>
       </div>
     </div>

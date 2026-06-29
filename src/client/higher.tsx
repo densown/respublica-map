@@ -275,7 +275,7 @@ function HigherLowerApp() {
               fontFamily: FONT.mono, fontSize: 9, color: t.muted,
               textTransform: 'uppercase', letterSpacing: '0.1em',
             }}>
-              Bestenliste
+              Leaderboard
             </div>
             {leaderboard.map((entry) => {
               const isUser = entry.username === username
@@ -361,10 +361,10 @@ function HigherLowerApp() {
         <RulesOverlay
           title="Higher or Lower"
           rules={[
-            'Dir werden zwei Länder und ein Indikator gezeigt.',
-            'Der Wert des linken Landes ist sichtbar — rate ob das rechte Land höher oder niedriger liegt.',
-            'Richtig? Dein Streak wächst und das nächste Land erscheint.',
-            'Falsch? Game Over. Dein bester Streak landet in der Bestenliste!',
+            'Two countries and one indicator are shown.',
+            'The left value is visible — guess if the right country is higher or lower.',
+            'Correct? Your streak grows and a new country appears.',
+            'Wrong? Game over. Your best streak goes on the leaderboard!',
           ]}
           onClose={() => setShowRules(false)}
         />
