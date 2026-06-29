@@ -5,6 +5,7 @@ import { StrictMode, useState, useEffect, useMemo, useCallback } from 'react'
 import { createRoot } from 'react-dom/client'
 import { formatValue } from './formatValue'
 import { getTheme, FONT } from './theme'
+import { RulesOverlay, RulesButton } from './RulesOverlay'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef } from './worldTypes'
 import type { LeaderboardEntry, LeaderboardResponse } from '../shared/api'
 
@@ -76,6 +77,7 @@ function HigherLowerApp() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null)
   const [scoreSubmitted, setScoreSubmitted] = useState(false)
+  const [showRules, setShowRules] = useState(true)
   const t = getTheme(true)
 
   useEffect(() => {
@@ -354,6 +356,19 @@ function HigherLowerApp() {
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       minHeight: '100vh', background: '#111111', color: '#E8E4DC', padding: 20,
     }}>
+      <RulesButton onClick={() => setShowRules(true)} />
+      {showRules && (
+        <RulesOverlay
+          title="Higher or Lower"
+          rules={[
+            'Dir werden zwei Länder und ein Indikator gezeigt.',
+            'Der Wert des linken Landes ist sichtbar — rate ob das rechte Land höher oder niedriger liegt.',
+            'Richtig? Dein Streak wächst und das nächste Land erscheint.',
+            'Falsch? Game Over. Dein bester Streak landet in der Bestenliste!',
+          ]}
+          onClose={() => setShowRules(false)}
+        />
+      )}
       {/* Streak counter */}
       <div style={{
         fontFamily: FONT.mono, fontSize: 10, color: t.muted, letterSpacing: '0.1em',

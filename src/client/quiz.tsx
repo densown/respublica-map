@@ -5,6 +5,7 @@ import { StrictMode, useState, useEffect, useMemo, useCallback } from 'react'
 import { createRoot } from 'react-dom/client'
 import { formatValue } from './formatValue'
 import { getTheme, FONT } from './theme'
+import { RulesOverlay, RulesButton } from './RulesOverlay'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef } from './worldTypes'
 
 const ROUNDS = 10
@@ -100,6 +101,7 @@ function QuizApp() {
   const [showResult, setShowResult] = useState(false)
   const [copied, setCopied] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const [showRules, setShowRules] = useState(true)
   const t = getTheme(true)
 
   useEffect(() => {
@@ -223,6 +225,19 @@ function QuizApp() {
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       minHeight: '100vh', background: '#111111', color: '#E8E4DC', padding: 20,
     }}>
+      <RulesButton onClick={() => setShowRules(true)} />
+      {showRules && (
+        <RulesOverlay
+          title="Guess Country"
+          rules={[
+            'Dir werden 4 Statistiken eines Landes gezeigt.',
+            'Wähle aus 4 Optionen das richtige Land.',
+            '10 Runden — alle Spieler bekommen heute die gleichen Fragen.',
+            'Teile dein Ergebnis am Ende!',
+          ]}
+          onClose={() => setShowRules(false)}
+        />
+      )}
       {/* Progress bar */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, width: '100%', maxWidth: 320 }}>
         {Array.from({ length: ROUNDS }, (_, i) => (
