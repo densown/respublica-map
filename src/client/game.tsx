@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client'
 import { WorldGlobe } from './WorldGlobe'
 import { Legend } from './Legend'
 import { IndicatorPicker } from './IndicatorPicker'
+import { CountryConsole } from './CountryConsole'
 import { formatValue } from './formatValue'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef, MapRow } from './worldTypes'
 
@@ -56,6 +57,7 @@ function Atlas() {
   const [geojson, setGeojson] = useState<WorldGeoJson | null>(null)
   const [indicators, setIndicators] = useState<IndicatorDef[] | null>(null)
   const [selectedCode, setSelectedCode] = useState('NY.GDP.PCAP.CD')
+  const [selectedCountry, setSelectedCountry] = useState<{ iso3: string; name: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const dark = useDarkMode()
 
@@ -102,6 +104,10 @@ function Atlas() {
     [unit, code],
   )
 
+  const handleCountryClick = useCallback((iso3: string, name: string) => {
+    setSelectedCountry((prev) => (prev?.iso3 === iso3 ? null : { iso3, name }))
+  }, [])
+
   if (error) {
     return (
       <div className="atlas-root atlas-error">
@@ -139,6 +145,7 @@ function Atlas() {
         indicatorName={activeIndicator?.name ?? ''}
         formatValue={fmt}
         dark={dark}
+        onCountryClick={handleCountryClick}
       />
 
       <IndicatorPicker
@@ -157,6 +164,19 @@ function Atlas() {
           year={activeIndicator.year}
           formatValue={fmt}
           dark={dark}
+        />
+      )}
+
+      {selectedCountry && (
+        <CountryConsole
+          iso3={selectedCountry.iso3}
+          countryName={selectedCountry.name}
+          data={rows}
+          indicators={indicators}
+          selectedCode={selectedCode}
+          formatValue={fmt}
+          dark={dark}
+          onClose={() => setSelectedCountry(null)}
         />
       )}
     </div>

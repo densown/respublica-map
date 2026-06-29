@@ -138,3 +138,14 @@
 .atlas-root[data-dark="false"] .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
   filter: none;
 }
+
+@keyframes atlas-console-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

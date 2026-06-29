@@ -60,6 +60,7 @@ export type WorldGlobeProps = {
   indicatorName: string
   formatValue: (v: number) => string
   dark: boolean
+  onCountryClick?: (iso3: string, name: string) => void
 }
 
 export function WorldGlobe({
@@ -70,6 +71,7 @@ export function WorldGlobe({
   vMax,
   formatValue: fmtValue,
   dark,
+  onCountryClick,
 }: WorldGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -77,9 +79,11 @@ export function WorldGlobe({
   const hoveredIsoRef = useRef<string | null>(null)
   const dataRef = useRef(data)
   const fmtRef = useRef(fmtValue)
+  const clickRef = useRef(onCountryClick)
 
   useEffect(() => { dataRef.current = data }, [data])
   useEffect(() => { fmtRef.current = fmtValue }, [fmtValue])
+  useEffect(() => { clickRef.current = onCountryClick }, [onCountryClick])
 
   const noData = dark ? NODATA_DARK : NODATA_LIGHT
 
@@ -93,13 +97,13 @@ export function WorldGlobe({
       'case',
       ['boolean', ['feature-state', 'hover'], false],
       '#ffffff',
-      dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.25)',
+      '#000000',
     ],
-    [dark],
+    [],
   )
 
   const borderWidth: ExpressionSpecification = useMemo(
-    () => ['case', ['boolean', ['feature-state', 'hover'], false], 1.5, 0.4],
+    () => ['case', ['boolean', ['feature-state', 'hover'], false], 1.8, 0.6],
     [],
   )
 
@@ -193,8 +197,19 @@ export function WorldGlobe({
         map.getCanvas().style.cursor = ''
       }
 
+      const onClick = (e: maplibregl.MapLayerMouseEvent) => {
+        const f = e.features?.[0]
+        const raw = f?.properties?.iso3
+        if (typeof raw !== 'string') return
+        const iso = normIso(raw)
+        const row = dataRef.current.find((r) => normIso(r.country_code) === iso)
+        const name = row?.country_name ?? f?.properties?.name ?? iso
+        clickRef.current?.(iso, String(name))
+      }
+
       map.on('mousemove', 'country-fills', onMove)
       map.on('mouseleave', 'country-fills', onLeave)
+      map.on('click', 'country-fills', onClick)
     },
     [],
   )
