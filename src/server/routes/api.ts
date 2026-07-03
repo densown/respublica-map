@@ -10,6 +10,11 @@ type ErrorResponse = {
 const LEADERBOARD_KEY = 'higher:leaderboard'
 const LEADERBOARD_SIZE = 10
 
+function dateKey(): string {
+  const d = new Date()
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+}
+
 export const api = new Hono()
 
 api.get('/init', async (c) => {
@@ -24,6 +29,17 @@ api.get('/init', async (c) => {
 
   try {
     const username = await reddit.getCurrentUsername()
+
+    if (username) {
+      const today = dateKey()
+      const dauKey = `dau:${today}`
+      const isNew = await redis.hSetNX(dauKey, username, '1')
+      if (isNew) {
+        await redis.expire(dauKey, 60 * 60 * 48)
+        await redis.incrBy('stats:totalVisits', 1)
+      }
+    }
+
     return c.json<InitResponse>({
       type: 'init',
       postId,
@@ -32,6 +48,29 @@ api.get('/init', async (c) => {
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
     return c.json<ErrorResponse>({ status: 'error', message: msg }, 400)
+  }
+})
+
+api.get('/stats', async (c) => {
+  try {
+    const today = dateKey()
+    const todayCount = await redis.hLen(`dau:${today}`)
+
+    const d = new Date()
+    d.setUTCDate(d.getUTCDate() - 1)
+    const yesterday = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+    const yesterdayCount = await redis.hLen(`dau:${yesterday}`)
+
+    const totalVisits = await redis.get('stats:totalVisits')
+
+    return c.json({
+      today: { date: today, uniqueUsers: todayCount },
+      yesterday: { date: yesterday, uniqueUsers: yesterdayCount },
+      totalUniqueVisits: Number(totalVisits ?? '0'),
+    })
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    return c.json<ErrorResponse>({ status: 'error', message: msg }, 500)
   }
 })
 
