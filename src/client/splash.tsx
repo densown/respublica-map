@@ -1,77 +1,150 @@
 import './index.css'
+import './atlas.css'
 
 import { requestExpandedMode } from '@devvit/web/client'
-import { StrictMode } from 'react'
+import { StrictMode, useState, useEffect, useMemo } from 'react'
 import { createRoot } from 'react-dom/client'
+import { WorldGlobe } from './WorldGlobe'
+import type { WorldGeoJson, IndicatorsFile, IndicatorDef, MapRow } from './worldTypes'
+
+function indicatorToRows(ind: IndicatorDef, geojson: WorldGeoJson): MapRow[] {
+  const yearData = ind.data[ind.latestYear] ?? {}
+  return geojson.features.map((f) => {
+    const iso = f.properties.iso3.toUpperCase()
+    return { country_code: iso, country_name: f.properties.name, value: yearData[iso] ?? null, region: null }
+  })
+}
 
 function Splash() {
+  const [geojson, setGeojson] = useState<WorldGeoJson | null>(null)
+  const [indicators, setIndicators] = useState<IndicatorDef[] | null>(null)
+  const [globeReady, setGlobeReady] = useState(false)
+
+  useEffect(() => {
+    void Promise.all([
+      fetch('/data/world.geojson').then((r) => { if (!r.ok) throw new Error(`GeoJSON: ${r.status}`); return r.json() }),
+      fetch('/data/indicators.json').then((r) => { if (!r.ok) throw new Error(`Indicators: ${r.status}`); return r.json() }),
+    ])
+      .then(([gj, ind]) => {
+        setGeojson(gj as WorldGeoJson)
+        const file = ind as IndicatorsFile
+        setIndicators(file.indicators)
+        setGlobeReady(true)
+      })
+      .catch(() => setGlobeReady(false))
+  }, [])
+
+  const defaultIndicator = useMemo(
+    () => indicators?.find((i) => i.code === 'NY.GDP.PCAP.CD') ?? indicators?.[0] ?? null,
+    [indicators],
+  )
+
+  const rows = useMemo(
+    () => (defaultIndicator && geojson ? indicatorToRows(defaultIndicator, geojson) : []),
+    [defaultIndicator, geojson],
+  )
+
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      minHeight: '100vh', gap: 16, background: '#111111', color: '#E8E4DC',
-      fontFamily: "'Source Serif 4', serif, system-ui",
-    }}>
-      <div style={{
-        fontFamily: "'Playfair Display', serif, system-ui",
-        fontSize: 28, fontWeight: 900, letterSpacing: -0.5,
-      }}>
-        World Atlas<span style={{ color: '#E8384F' }}>.</span>
-      </div>
-      <div style={{ fontSize: 13, color: '#8B8B8B', maxWidth: 260, textAlign: 'center' }}>
-        Explore global indicators on an interactive globe
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 8 }}>
-        <button
-          onClick={(e) => requestExpandedMode(e.nativeEvent, 'game')}
-          style={{
-            padding: '10px 32px', borderRadius: 20, border: 'none',
-            background: '#E8384F', color: '#fff', fontSize: 14, fontWeight: 600,
-            cursor: 'pointer', fontFamily: "'Source Serif 4', serif, system-ui",
-          }}
-        >
-          Open Globe
-        </button>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button
-            onClick={(e) => requestExpandedMode(e.nativeEvent, 'quiz')}
-            style={{
-              padding: '8px 18px', borderRadius: 16,
-              border: '1px solid #2D2D2D', background: 'transparent',
-              color: '#E8E4DC', fontSize: 12, fontWeight: 600,
-              cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
-            }}
-          >
-            Guess Country
-          </button>
-          <button
-            onClick={(e) => requestExpandedMode(e.nativeEvent, 'higher')}
-            style={{
-              padding: '8px 18px', borderRadius: 16,
-              border: '1px solid #2D2D2D', background: 'transparent',
-              color: '#E8E4DC', fontSize: 12, fontWeight: 600,
-              cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
-            }}
-          >
-            Higher or Lower
-          </button>
-          <button
-            onClick={(e) => requestExpandedMode(e.nativeEvent, 'sort')}
-            style={{
-              padding: '8px 18px', borderRadius: 16,
-              border: '1px solid #2D2D2D', background: 'transparent',
-              color: '#E8E4DC', fontSize: 12, fontWeight: 600,
-              cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
-            }}
-          >
-            Rank It
-          </button>
+    <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', background: '#0A0A0A' }}>
+      {/* Globe background */}
+      {globeReady && geojson && defaultIndicator && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+          <WorldGlobe
+            geojson={geojson}
+            data={rows}
+            category={defaultIndicator.category ?? 'economy'}
+            unit={defaultIndicator.unit ?? ''}
+            indicatorName={defaultIndicator.name ?? ''}
+            formatValue={(v) => String(v)}
+            dark={true}
+          />
         </div>
-      </div>
+      )}
+
+      {/* Overlay */}
       <div style={{
-        position: 'absolute', bottom: 12,
-        fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: '#525960',
+        position: 'absolute', inset: 0, zIndex: 10,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        background: 'radial-gradient(ellipse at center, rgba(10,10,10,0.5) 0%, rgba(10,10,10,0.75) 100%)',
+        pointerEvents: 'none',
       }}>
-        r/Res_Publica_DE
+        <div style={{ pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <div style={{
+            fontFamily: "'Playfair Display', serif, system-ui",
+            fontSize: 32, fontWeight: 900, letterSpacing: -0.5,
+            color: '#E8E4DC',
+            textShadow: '0 2px 20px rgba(0,0,0,0.6)',
+          }}>
+            World Atlas<span style={{ color: '#E8384F' }}>.</span>
+          </div>
+          <div style={{
+            fontSize: 13, color: 'rgba(232,228,220,0.7)',
+            maxWidth: 260, textAlign: 'center',
+            fontFamily: "'Source Serif 4', serif, system-ui",
+            textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+          }}>
+            Explore global indicators on an interactive globe
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <button
+              onClick={(e) => requestExpandedMode(e.nativeEvent, 'game')}
+              style={{
+                padding: '10px 32px', borderRadius: 20, border: 'none',
+                background: '#E8384F', color: '#fff', fontSize: 14, fontWeight: 600,
+                cursor: 'pointer', fontFamily: "'Source Serif 4', serif, system-ui",
+                boxShadow: '0 4px 20px rgba(232,56,79,0.4)',
+              }}
+            >
+              Open Globe
+            </button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button
+                onClick={(e) => requestExpandedMode(e.nativeEvent, 'quiz')}
+                style={{
+                  padding: '8px 18px', borderRadius: 16,
+                  border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)',
+                  backdropFilter: 'blur(8px)',
+                  color: '#E8E4DC', fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
+                }}
+              >
+                Guess Country
+              </button>
+              <button
+                onClick={(e) => requestExpandedMode(e.nativeEvent, 'higher')}
+                style={{
+                  padding: '8px 18px', borderRadius: 16,
+                  border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)',
+                  backdropFilter: 'blur(8px)',
+                  color: '#E8E4DC', fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
+                }}
+              >
+                Higher or Lower
+              </button>
+              <button
+                onClick={(e) => requestExpandedMode(e.nativeEvent, 'sort')}
+                style={{
+                  padding: '8px 18px', borderRadius: 16,
+                  border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)',
+                  backdropFilter: 'blur(8px)',
+                  color: '#E8E4DC', fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
+                }}
+              >
+                Rank It
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          position: 'absolute', bottom: 12, pointerEvents: 'none',
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: 'rgba(82,89,96,0.8)',
+        }}>
+          r/Res_Publica_DE
+        </div>
       </div>
     </div>
   )
