@@ -87,17 +87,32 @@ function Splash() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 8 }}>
-            <button
-              onClick={(e) => requestExpandedMode(e.nativeEvent, 'game')}
-              style={{
-                padding: '10px 32px', borderRadius: 20, border: 'none',
-                background: '#E8384F', color: '#fff', fontSize: 14, fontWeight: 600,
-                cursor: 'pointer', fontFamily: "'Source Serif 4', serif, system-ui",
-                boxShadow: '0 4px 20px rgba(232,56,79,0.4)',
-              }}
-            >
-              Open Globe
-            </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={(e) => requestExpandedMode(e.nativeEvent, 'game')}
+                style={{
+                  padding: '10px 28px', borderRadius: 20, border: 'none',
+                  background: '#E8384F', color: '#fff', fontSize: 14, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: "'Source Serif 4', serif, system-ui",
+                  boxShadow: '0 4px 20px rgba(232,56,79,0.4)',
+                }}
+              >
+                Open Globe
+              </button>
+              <button
+                onClick={(e) => requestExpandedMode(e.nativeEvent, 'world')}
+                style={{
+                  padding: '10px 28px', borderRadius: 20,
+                  border: '1px solid rgba(212,168,67,0.6)',
+                  background: 'rgba(212,168,67,0.12)', color: '#D4A843',
+                  fontSize: 14, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: "'Source Serif 4', serif, system-ui",
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
+                World Game
+              </button>
+            </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
               <button
                 onClick={(e) => requestExpandedMode(e.nativeEvent, 'quiz')}

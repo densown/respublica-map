@@ -19,6 +19,17 @@
       },
       "sort": {
         "entry": "sort.html"
+      },
+      "world": {
+        "entry": "world.html"
+      }
+    }
+  },
+  "scheduler": {
+    "tasks": {
+      "world-tick": {
+        "endpoint": "/internal/scheduler/world-tick",
+        "cron": "0 20 * * *"
       }
     }
   },

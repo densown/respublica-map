@@ -1,11 +1,12 @@
 import './index.css'
 import './atlas.css'
 
-import { StrictMode, useState, useEffect, useMemo, useCallback } from 'react'
+import { StrictMode, useState, useEffect, useCallback } from 'react'
 import { createRoot } from 'react-dom/client'
 import { formatValue } from './formatValue'
 import { getTheme, FONT } from './theme'
 import { RulesOverlay, RulesButton } from './RulesOverlay'
+import { earnInfluence } from './earnInfluence'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef } from './worldTypes'
 import type { LeaderboardEntry, LeaderboardResponse } from '../shared/api'
 
@@ -78,6 +79,7 @@ function HigherLowerApp() {
   const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null)
   const [scoreSubmitted, setScoreSubmitted] = useState(false)
   const [showRules, setShowRules] = useState(true)
+  const [earnedInfluence, setEarnedInfluence] = useState(0)
   const t = getTheme(true)
 
   useEffect(() => {
@@ -126,6 +128,9 @@ function HigherLowerApp() {
       fetchLeaderboard()
       return
     }
+    void earnInfluence('higher', finalScore).then((res) => {
+      if (res) setEarnedInfluence(res.earned)
+    })
     void fetch('/api/higher/score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -178,6 +183,7 @@ function HigherLowerApp() {
     setStreak(0)
     setLastCorrect(null)
     setScoreSubmitted(false)
+    setEarnedInfluence(0)
     setCurrentRound(pickRound(indicators, geojson))
     setGameState('playing')
   }, [indicators, geojson])
@@ -247,6 +253,15 @@ function HigherLowerApp() {
         <div style={{ fontFamily: FONT.mono, fontSize: 11, color: t.muted, letterSpacing: '0.1em' }}>
           STREAK {bestStreak > streak ? `· BEST: ${bestStreak}` : ''}
         </div>
+
+        {earnedInfluence > 0 && (
+          <div style={{
+            fontFamily: FONT.mono, fontSize: 11, color: '#D4A843', marginTop: 8,
+            padding: '5px 14px', borderRadius: 14, border: '1px solid rgba(212,168,67,0.35)',
+          }}>
+            +{earnedInfluence} influence for the World Game
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
           <button type="button" onClick={handleShare} style={{

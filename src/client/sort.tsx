@@ -1,11 +1,12 @@
 import './index.css'
 import './atlas.css'
 
-import { StrictMode, useState, useEffect, useMemo, useCallback } from 'react'
+import { StrictMode, useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createRoot } from 'react-dom/client'
 import { formatValue } from './formatValue'
 import { getTheme, FONT } from './theme'
 import { RulesOverlay, RulesButton } from './RulesOverlay'
+import { earnInfluence } from './earnInfluence'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef } from './worldTypes'
 
 const ROUNDS = 10
@@ -111,6 +112,8 @@ function SortApp() {
   const [copied, setCopied] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [showRules, setShowRules] = useState(true)
+  const [earnedInfluence, setEarnedInfluence] = useState(0)
+  const earnReported = useRef(false)
   const t = getTheme(true)
 
   useEffect(() => {
@@ -135,6 +138,14 @@ function SortApp() {
   const isFinished = round >= rounds.length && rounds.length > 0
   const totalScore = roundScores.reduce((a, b) => a + b, 0)
   const maxScore = ROUNDS * ITEMS_PER_ROUND
+
+  useEffect(() => {
+    if (!isFinished || earnReported.current) return
+    earnReported.current = true
+    void earnInfluence('sort', totalScore).then((res) => {
+      if (res) setEarnedInfluence(res.earned)
+    })
+  }, [isFinished, totalScore])
 
   const handlePick = useCallback((iso3: string) => {
     if (showResult || !currentRound) return
@@ -169,6 +180,8 @@ function SortApp() {
     setShowResult(false)
     setRoundScores([])
     setAttempt((prev) => prev + 1)
+    setEarnedInfluence(0)
+    earnReported.current = false
   }, [])
 
   const handleShare = useCallback(() => {
@@ -219,6 +232,14 @@ function SortApp() {
         <div style={{ fontFamily: FONT.body, fontSize: 14, color: t.muted }}>
           {verdict}
         </div>
+        {earnedInfluence > 0 && (
+          <div style={{
+            fontFamily: FONT.mono, fontSize: 11, color: '#D4A843',
+            padding: '5px 14px', borderRadius: 14, border: '1px solid rgba(212,168,67,0.35)',
+          }}>
+            +{earnedInfluence} influence for the World Game
+          </div>
+        )}
         <div style={{ fontFamily: FONT.mono, fontSize: 18, letterSpacing: 3, margin: '8px 0' }}>
           {roundScores.map((s, i) => (
             <span key={i}>{s === ITEMS_PER_ROUND ? '🟩' : s >= ITEMS_PER_ROUND - 1 ? '🟨' : '🟥'}</span>
@@ -309,9 +330,9 @@ function SortApp() {
           const isPicked = pickIndex !== -1
           const correctIndex = currentRound!.correctOrder.indexOf(country.iso3)
 
-          let bg = 'transparent'
-          let borderCol = t.border
-          let textCol = t.ink
+          let bg: string = 'transparent'
+          let borderCol: string = t.border
+          let textCol: string = t.ink
           let badge = ''
 
           if (showResult) {

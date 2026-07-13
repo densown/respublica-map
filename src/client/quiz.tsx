@@ -1,11 +1,12 @@
 import './index.css'
 import './atlas.css'
 
-import { StrictMode, useState, useEffect, useMemo, useCallback } from 'react'
+import { StrictMode, useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createRoot } from 'react-dom/client'
 import { formatValue } from './formatValue'
 import { getTheme, FONT } from './theme'
 import { RulesOverlay, RulesButton } from './RulesOverlay'
+import { earnInfluence } from './earnInfluence'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef } from './worldTypes'
 
 const ROUNDS = 10
@@ -102,6 +103,8 @@ function QuizApp() {
   const [copied, setCopied] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [showRules, setShowRules] = useState(true)
+  const [earnedInfluence, setEarnedInfluence] = useState(0)
+  const earnReported = useRef(false)
   const t = getTheme(true)
 
   useEffect(() => {
@@ -127,6 +130,14 @@ function QuizApp() {
   const isFinished = round >= questions.length && questions.length > 0
   const score = answers.filter((a) => a).length
 
+  useEffect(() => {
+    if (!isFinished || earnReported.current) return
+    earnReported.current = true
+    void earnInfluence('quiz', score).then((res) => {
+      if (res) setEarnedInfluence(res.earned)
+    })
+  }, [isFinished, score])
+
   const handleAnswer = useCallback((iso3: string) => {
     if (showResult || !currentQ) return
     const correct = iso3 === currentQ.iso3
@@ -147,6 +158,8 @@ function QuizApp() {
     setSelected(null)
     setShowResult(false)
     setAttempt((prev) => prev + 1)
+    setEarnedInfluence(0)
+    earnReported.current = false
   }, [])
 
   const handleShare = useCallback(() => {
@@ -193,6 +206,14 @@ function QuizApp() {
         <div style={{ fontFamily: FONT.body, fontSize: 14, color: t.muted }}>
           {verdict}
         </div>
+        {earnedInfluence > 0 && (
+          <div style={{
+            fontFamily: FONT.mono, fontSize: 11, color: '#D4A843',
+            padding: '5px 14px', borderRadius: 14, border: '1px solid rgba(212,168,67,0.35)',
+          }}>
+            +{earnedInfluence} influence for the World Game
+          </div>
+        )}
         <div style={{ fontFamily: FONT.mono, fontSize: 18, letterSpacing: 3, margin: '8px 0' }}>
           {answers.map((a, i) => <span key={i}>{a ? '🟩' : '🟥'}</span>)}
         </div>
@@ -290,9 +311,9 @@ function QuizApp() {
           const isCorrect = opt.iso3 === currentQ!.iso3
           const isSelected = opt.iso3 === selected
 
-          let bg = 'transparent'
-          let borderCol = t.border
-          let textCol = t.ink
+          let bg: string = 'transparent'
+          let borderCol: string = t.border
+          let textCol: string = t.ink
 
           if (showResult) {
             if (isCorrect) {
