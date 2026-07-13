@@ -162,6 +162,286 @@ const WB_INDICATORS = [
       interpretation: 'NATO target is 2% of GDP. Global average is ~2.2%. Above 4% indicates high militarization. Some conflict states exceed 6%.'
     }
   },
+  {
+    code: 'SP.POP.TOTL',
+    wbCode: 'SP.POP.TOTL',
+    name: 'Population',
+    category: 'population',
+    unit: 'people',
+    scale: 'log',
+    decimals: 0,
+    meta: {
+      description: 'Total population based on the de facto definition, counting all residents regardless of legal status or citizenship.',
+      source: 'UN Population Division via World Bank',
+      interpretation: 'India and China each exceed 1.4 billion. The median country has around 10 million inhabitants.'
+    }
+  },
+  {
+    code: 'EN.POP.DNST',
+    wbCode: 'EN.POP.DNST',
+    name: 'Population density',
+    category: 'population',
+    unit: 'people per km2',
+    scale: 'log',
+    decimals: 1,
+    meta: {
+      description: 'Midyear population divided by land area in square kilometers.',
+      source: 'World Bank, World Development Indicators',
+      interpretation: 'Global average is ~60 per km2. City states like Singapore exceed 8,000. Mongolia has about 2.'
+    }
+  },
+  {
+    code: 'SP.URB.TOTL.IN.ZS',
+    wbCode: 'SP.URB.TOTL.IN.ZS',
+    name: 'Urban population',
+    category: 'population',
+    unit: '% of population',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'Share of the population living in urban areas as defined by national statistical offices.',
+      source: 'UN Population Division via World Bank',
+      interpretation: 'The world crossed 50% urban around 2007. Above 80% is typical for highly developed economies.'
+    }
+  },
+  {
+    code: 'SP.POP.65UP.TO.ZS',
+    wbCode: 'SP.POP.65UP.TO.ZS',
+    name: 'Population ages 65+',
+    category: 'population',
+    unit: '% of population',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'Share of the population that is 65 years or older.',
+      source: 'UN Population Division via World Bank',
+      interpretation: 'Above 20% indicates an aged society (Japan, Italy). Sub-Saharan Africa is mostly below 4%.'
+    }
+  },
+  {
+    code: 'NY.GDP.MKTP.KD.ZG',
+    wbCode: 'NY.GDP.MKTP.KD.ZG',
+    name: 'GDP growth',
+    category: 'economy',
+    unit: '% annual',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'Annual percentage growth rate of GDP at market prices based on constant local currency.',
+      source: 'World Bank, World Development Indicators',
+      interpretation: 'Mature economies grow 1-3% per year. Above 6% is rapid growth. Negative values indicate recession.'
+    }
+  },
+  {
+    code: 'ST.INT.ARVL',
+    wbCode: 'ST.INT.ARVL',
+    name: 'Tourist arrivals',
+    category: 'trade',
+    unit: 'arrivals per year',
+    scale: 'log',
+    decimals: 0,
+    meta: {
+      description: 'Number of international inbound tourists arriving per year.',
+      source: 'World Tourism Organization via World Bank',
+      interpretation: 'France leads with ~90 million arrivals per year. COVID cut global tourism by ~70% in 2020.'
+    }
+  },
+  {
+    code: 'IS.AIR.PSGR',
+    wbCode: 'IS.AIR.PSGR',
+    name: 'Air passengers carried',
+    category: 'trade',
+    unit: 'passengers per year',
+    scale: 'log',
+    decimals: 0,
+    meta: {
+      description: 'Passengers carried by air carriers registered in the country, domestic and international.',
+      source: 'International Civil Aviation Organization via World Bank',
+      interpretation: 'Reflects both market size and hub status. The US and China each carry over 500 million passengers per year.'
+    }
+  },
+  {
+    code: 'SH.MED.PHYS.ZS',
+    wbCode: 'SH.MED.PHYS.ZS',
+    name: 'Physicians',
+    category: 'health',
+    unit: 'per 1,000 people',
+    scale: 'linear',
+    decimals: 2,
+    meta: {
+      description: 'Number of medical doctors, including generalists and specialists, per 1,000 people.',
+      source: 'World Health Organization via World Bank',
+      interpretation: 'The WHO considers fewer than 1 per 1,000 a critical shortage. Europe averages 3-5.'
+    }
+  },
+  {
+    code: 'SH.XPD.CHEX.GD.ZS',
+    wbCode: 'SH.XPD.CHEX.GD.ZS',
+    name: 'Health expenditure',
+    category: 'health',
+    unit: '% of GDP',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'Current health expenditure including public and private spending as share of GDP.',
+      source: 'World Health Organization via World Bank',
+      interpretation: 'The US spends over 16% of GDP. Most of Europe spends 9-12%. Below 4% is common in low-income countries.'
+    }
+  },
+  {
+    code: 'SH.DYN.MORT',
+    wbCode: 'SH.DYN.MORT',
+    name: 'Under-5 mortality',
+    category: 'health',
+    unit: 'per 1,000 live births',
+    scale: 'log',
+    decimals: 1,
+    meta: {
+      description: 'Probability per 1,000 live births that a newborn dies before reaching age five.',
+      source: 'UN Inter-agency Group for Child Mortality Estimation',
+      interpretation: 'Below 5 in most high-income countries. Global progress cut the rate by more than half since 2000.'
+    }
+  },
+  {
+    code: 'SH.ALC.PCAP.LI',
+    wbCode: 'SH.ALC.PCAP.LI',
+    name: 'Alcohol consumption',
+    category: 'health',
+    unit: 'liters per capita',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'Total alcohol consumed per adult (15+) per year, in liters of pure alcohol.',
+      source: 'World Health Organization via World Bank',
+      interpretation: 'Central and Eastern Europe lead with over 12 liters. Muslim-majority countries are typically below 1.'
+    }
+  },
+  {
+    code: 'SH.STA.OWAD.ZS',
+    wbCode: 'SH.STA.OWAD.ZS',
+    name: 'Overweight adults',
+    category: 'health',
+    unit: '% of adults',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'Share of adults with a body mass index of 25 or higher.',
+      source: 'World Health Organization via World Bank',
+      interpretation: 'Pacific island states exceed 80%. Global average is around 40% and rising.'
+    }
+  },
+  {
+    code: 'SH.STA.TRAF.P5',
+    wbCode: 'SH.STA.TRAF.P5',
+    name: 'Road traffic deaths',
+    category: 'health',
+    unit: 'per 100,000 people',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'Estimated deaths from road traffic injuries per 100,000 population.',
+      source: 'World Health Organization via World Bank',
+      interpretation: 'Europe averages below 10. Parts of Africa and Southeast Asia exceed 25 despite far fewer vehicles.'
+    }
+  },
+  {
+    code: 'AG.LND.FRST.ZS',
+    wbCode: 'AG.LND.FRST.ZS',
+    name: 'Forest area',
+    category: 'environment',
+    unit: '% of land area',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'Land under natural or planted forest of at least 5 meters, as share of total land area.',
+      source: 'Food and Agriculture Organization via World Bank',
+      interpretation: 'Suriname and Guyana exceed 90%. Desert nations are near 0%. The global average is ~31%.'
+    }
+  },
+  {
+    code: 'EG.ELC.ACCS.ZS',
+    wbCode: 'EG.ELC.ACCS.ZS',
+    name: 'Access to electricity',
+    category: 'technology',
+    unit: '% of population',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'Share of the population with access to electricity.',
+      source: 'World Bank, Sustainable Energy for All',
+      interpretation: 'Universal in high and middle income countries. Sub-Saharan Africa averages around 50%.'
+    }
+  },
+  {
+    code: 'IT.CEL.SETS.P2',
+    wbCode: 'IT.CEL.SETS.P2',
+    name: 'Mobile subscriptions',
+    category: 'technology',
+    unit: 'per 100 people',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'Mobile cellular subscriptions per 100 people, including multiple SIMs per person.',
+      source: 'International Telecommunication Union (ITU)',
+      interpretation: 'Values above 100 are common since many people hold several SIM cards.'
+    }
+  },
+  {
+    code: 'SL.TLF.CACT.FE.ZS',
+    wbCode: 'SL.TLF.CACT.FE.ZS',
+    name: 'Female labor force participation',
+    category: 'inequality',
+    unit: '% of female population 15+',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'Share of women aged 15 and older who are economically active (ILO modeled estimate).',
+      source: 'International Labour Organization via World Bank',
+      interpretation: 'Nordic countries exceed 60%. Some countries in the Middle East and South Asia are below 25%.'
+    }
+  },
+  {
+    code: 'SE.XPD.TOTL.GD.ZS',
+    wbCode: 'SE.XPD.TOTL.GD.ZS',
+    name: 'Education spending',
+    category: 'education',
+    unit: '% of GDP',
+    scale: 'linear',
+    decimals: 1,
+    meta: {
+      description: 'General government expenditure on education as share of GDP.',
+      source: 'UNESCO Institute for Statistics via World Bank',
+      interpretation: 'UNESCO recommends 4-6% of GDP. Nordic countries typically spend 6-8%.'
+    }
+  },
+  {
+    code: 'GB.XPD.RSDV.GD.ZS',
+    wbCode: 'GB.XPD.RSDV.GD.ZS',
+    name: 'R&D expenditure',
+    category: 'technology',
+    unit: '% of GDP',
+    scale: 'linear',
+    decimals: 2,
+    meta: {
+      description: 'Gross domestic expenditure on research and development as share of GDP.',
+      source: 'UNESCO Institute for Statistics via World Bank',
+      interpretation: 'Israel and South Korea lead with ~5%. The EU target is 3%. Most countries spend below 1%.'
+    }
+  },
+  {
+    code: 'MS.MIL.TOTL.P1',
+    wbCode: 'MS.MIL.TOTL.P1',
+    name: 'Armed forces personnel',
+    category: 'military',
+    unit: 'personnel',
+    scale: 'log',
+    decimals: 0,
+    meta: {
+      description: 'Active duty military personnel plus paramilitary forces if trained and equipped like the military.',
+      source: 'International Institute for Strategic Studies via World Bank',
+      interpretation: 'China maintains the largest force at over 2 million. Iceland has no standing army.'
+    }
+  },
 ]
 
 // V-Dem indicators (fetched from their CSV API)
@@ -214,7 +494,7 @@ async function fetchWithRetry(url, retries = 3) {
  * Fetch World Bank indicator data.
  * API: https://api.worldbank.org/v2/country/all/indicator/{CODE}?format=json&date=2000:2024&per_page=20000
  */
-async function fetchWorldBankIndicator(wbCode) {
+async function fetchWorldBankIndicator(wbCode, decimals) {
   const url = `https://api.worldbank.org/v2/country/all/indicator/${wbCode}?format=json&date=${START_YEAR}:${END_YEAR}&per_page=20000`
   console.log(`  Fetching WB: ${wbCode}...`)
 
@@ -229,6 +509,16 @@ async function fetchWorldBankIndicator(wbCode) {
   const records = json[1]
   const data = {} // { year: { ISO3: value } }
 
+  const digits = decimals != null ? decimals : (
+    wbCode.includes('GINI') ? 1 :
+    wbCode.includes('LE00') ? 1 :
+    wbCode.includes('GDP') ? 0 :
+    wbCode.includes('CO2') ? 2 :
+    wbCode.includes('IHR') ? 1 :
+    wbCode.includes('MIL') ? 2 :
+    wbCode.includes('NET') ? 1 : 2
+  )
+
   for (const r of records) {
     if (r.value == null) continue
     const iso3 = r.countryiso3code
@@ -240,15 +530,7 @@ async function fetchWorldBankIndicator(wbCode) {
     if (isNaN(year) || year < START_YEAR || year > END_YEAR) continue
 
     if (!data[year]) data[year] = {}
-    data[year][iso3.toUpperCase()] = Number(r.value.toFixed(
-      wbCode.includes('GINI') ? 1 :
-      wbCode.includes('LE00') ? 1 :
-      wbCode.includes('GDP') ? 0 :
-      wbCode.includes('CO2') ? 2 :
-      wbCode.includes('IHR') ? 1 :
-      wbCode.includes('MIL') ? 2 :
-      wbCode.includes('NET') ? 1 : 2
-    ))
+    data[year][iso3.toUpperCase()] = Number(r.value.toFixed(digits))
   }
 
   return data
@@ -868,14 +1150,14 @@ async function main() {
   console.log('--- World Bank Indicators ---')
   for (const ind of WB_INDICATORS) {
     try {
-      let data = await fetchWorldBankIndicator(ind.wbCode)
+      let data = await fetchWorldBankIndicator(ind.wbCode, ind.decimals)
       let yearKeys = Object.keys(data).map(Number).filter(y => y >= START_YEAR && y <= END_YEAR).sort((a, b) => a - b)
 
       // Try alternative codes if primary returns no data
       if (yearKeys.length === 0 && ind.wbAlternatives) {
         for (const alt of ind.wbAlternatives) {
           console.log(`  Trying alternative: ${alt}...`)
-          data = await fetchWorldBankIndicator(alt)
+          data = await fetchWorldBankIndicator(alt, ind.decimals)
           yearKeys = Object.keys(data).map(Number).filter(y => y >= START_YEAR && y <= END_YEAR).sort((a, b) => a - b)
           if (yearKeys.length > 0) break
           await delay(500)

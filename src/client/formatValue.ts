@@ -22,6 +22,22 @@ export function formatValue(value: number, unit: string, code: string): string {
     return `${fmtFixed(value, value >= 100 ? 0 : 1)} per 100k`
   }
 
+  if (u.includes('per 1,000')) {
+    return `${fmtFixed(value, value >= 100 ? 0 : value >= 10 ? 1 : 2)} per 1k`
+  }
+
+  if (u.includes('per 100 people')) {
+    return fmtFixed(value, 1)
+  }
+
+  if (u.includes('per km2')) {
+    return `${fmtFixed(value, value >= 100 ? 0 : 1)} /km²`
+  }
+
+  if (u.includes('liters')) {
+    return `${fmtFixed(value, 1)} L`
+  }
+
   if (u.includes('metric tons')) {
     return `${fmtFixed(value, 2)} t`
   }

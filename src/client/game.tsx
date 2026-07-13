@@ -54,6 +54,7 @@ function Atlas() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
   const [selectedCountry, setSelectedCountry] = useState<{ iso3: string; name: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showHint, setShowHint] = useState(true)
   const dark = useDarkMode()
   const globeRef = useRef<WorldGlobeHandle>(null)
 
@@ -104,6 +105,7 @@ function Atlas() {
   const fmt = useCallback((v: number) => (unit ? formatValue(v, unit, code) : String(v)), [unit, code])
 
   const handleCountryClick = useCallback((iso3: string, name: string) => {
+    setShowHint(false)
     setSelectedCountry((prev) => (prev?.iso3 === iso3 ? null : { iso3, name }))
   }, [])
 
@@ -159,6 +161,31 @@ function Atlas() {
       {activeIndicator && (
         <Legend category={activeIndicator.category} vMin={vMin} vMax={vMax}
           indicatorName={activeIndicator.name} year={activeYear} formatValue={fmt} dark={dark} />
+      )}
+
+      {showHint && !selectedCountry && activeIndicator && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setShowHint(false)}
+          style={{
+            position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 25, display: 'flex', alignItems: 'center', gap: 8,
+            padding: '9px 16px', borderRadius: 18, cursor: 'pointer',
+            background: dark ? 'rgba(18,18,18,0.9)' : 'rgba(255,255,255,0.92)',
+            border: `1px solid ${dark ? '#2D2D2D' : '#E8E4DC'}`,
+            boxShadow: '0 6px 24px rgba(0,0,0,0.3)',
+            maxWidth: 'calc(100vw - 40px)',
+          }}
+        >
+          <span style={{
+            fontFamily: FONT.body, fontSize: 12,
+            color: dark ? '#E8E4DC' : '#0F0F0F',
+          }}>
+            You're looking at <strong>{activeIndicator.name}</strong>. Tap any country to inspect it.
+          </span>
+          <span style={{ fontFamily: FONT.mono, fontSize: 10, color: '#8B8B8B' }}>✕</span>
+        </div>
       )}
 
       {selectedCountry && (

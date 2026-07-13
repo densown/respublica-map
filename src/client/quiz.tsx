@@ -6,11 +6,15 @@ import { createRoot } from 'react-dom/client'
 import { formatValue } from './formatValue'
 import { getTheme, FONT } from './theme'
 import { RulesOverlay, RulesButton } from './RulesOverlay'
+import { ResultScreen } from './ResultScreen'
 import { earnInfluence } from './earnInfluence'
+import { seededRandom, dailySeed, shuffleWith, pickDistractors } from './gameKit'
+import type { DistractorCandidate } from './gameKit'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef } from './worldTypes'
 
 const ROUNDS = 10
 const CLUE_COUNT = 4
+const REF_INDICATOR = 'NY.GDP.PCAP.CD'
 
 type QuizQuestion = {
   iso3: string
@@ -19,34 +23,18 @@ type QuizQuestion = {
   options: { iso3: string; name: string }[]
 }
 
-function seededRandom(seed: number) {
-  let s = seed
-  return () => {
-    s = (s * 16807 + 0) % 2147483647
-    return (s - 1) / 2147483646
-  }
-}
-
-function shuffleWith<T>(arr: T[], rng: () => number): T[] {
-  const result = [...arr]
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [result[i], result[j]] = [result[j]!, result[i]!]
-  }
-  return result
-}
-
 function generateQuiz(
   indicators: IndicatorDef[],
   geojson: WorldGeoJson,
   regions: Record<string, string>,
   attempt: number,
 ): QuizQuestion[] {
-  const today = new Date()
-  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate() + attempt * 99991
-  const rng = seededRandom(seed)
+  const rng = seededRandom(dailySeed(attempt))
 
-  const candidates: { iso3: string; name: string }[] = []
+  const refInd = indicators.find((i) => i.code === REF_INDICATOR)
+  const refData = refInd?.data[refInd.latestYear] ?? {}
+
+  const candidates: DistractorCandidate[] = []
   for (const f of geojson.features) {
     const iso = f.properties.iso3.toUpperCase()
     let coverage = 0
@@ -55,7 +43,12 @@ function generateQuiz(
       if (yearData?.[iso] != null) coverage++
     }
     if (coverage >= 6) {
-      candidates.push({ iso3: iso, name: f.properties.name })
+      candidates.push({
+        iso3: iso,
+        name: f.properties.name,
+        region: regions[iso],
+        refValue: refData[iso] ?? null,
+      })
     }
   }
 
@@ -74,13 +67,8 @@ function generateQuiz(
       return { name: ind.name, value: formatValue(v, ind.unit, ind.code) }
     })
 
-    const region = regions[country.iso3]
-    const sameRegion = candidates.filter((c) => c.iso3 !== country.iso3 && regions[c.iso3] === region)
-    const otherRegion = candidates.filter((c) => c.iso3 !== country.iso3 && regions[c.iso3] !== region)
-
-    const wrongPool = sameRegion.length >= 3
-      ? shuffleWith(sameRegion, rng).slice(0, 3)
-      : [...shuffleWith(sameRegion, rng), ...shuffleWith(otherRegion, rng)].slice(0, 3)
+    // Aehnliche Laender (Region + Wohlstandsniveau) als falsche Optionen
+    const wrongPool = pickDistractors(country, candidates, 3, rng)
 
     const options = shuffleWith([
       { iso3: country.iso3, name: country.name },
@@ -100,7 +88,6 @@ function QuizApp() {
   const [answers, setAnswers] = useState<boolean[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [showResult, setShowResult] = useState(false)
-  const [copied, setCopied] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [showRules, setShowRules] = useState(true)
   const [earnedInfluence, setEarnedInfluence] = useState(0)
@@ -162,14 +149,6 @@ function QuizApp() {
     earnReported.current = false
   }, [])
 
-  const handleShare = useCallback(() => {
-    const blocks = answers.map((a) => a ? '🟩' : '🟥').join('')
-    const text = `World Atlas Quiz: ${score}/${ROUNDS}\n${blocks}\nr/Res_Publica_DE`
-    void navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }, [answers, score])
 
   if (error) {
     return (
@@ -192,52 +171,18 @@ function QuizApp() {
   if (isFinished) {
     const pct = Math.round((score / ROUNDS) * 100)
     const verdict = pct >= 80 ? 'Geography expert!' : pct >= 50 ? 'Well played!' : 'Keep exploring!'
+    const emojiRow = answers.map((a) => a ? '🟩' : '🟥').join('')
     return (
-      <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        minHeight: '100vh', background: '#111111', color: '#E8E4DC', padding: 24, gap: 16,
-      }}>
-        <div style={{ fontFamily: FONT.display, fontSize: 28, fontWeight: 900 }}>
-          Quiz Complete<span style={{ color: t.red }}>.</span>
-        </div>
-        <div style={{ fontFamily: FONT.display, fontSize: 56, fontWeight: 900, color: t.red, lineHeight: 1 }}>
-          {score}/{ROUNDS}
-        </div>
-        <div style={{ fontFamily: FONT.body, fontSize: 14, color: t.muted }}>
-          {verdict}
-        </div>
-        {earnedInfluence > 0 && (
-          <div style={{
-            fontFamily: FONT.mono, fontSize: 11, color: '#D4A843',
-            padding: '5px 14px', borderRadius: 14, border: '1px solid rgba(212,168,67,0.35)',
-          }}>
-            +{earnedInfluence} influence for the World Game
-          </div>
-        )}
-        <div style={{ fontFamily: FONT.mono, fontSize: 18, letterSpacing: 3, margin: '8px 0' }}>
-          {answers.map((a, i) => <span key={i}>{a ? '🟩' : '🟥'}</span>)}
-        </div>
-        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-          <button type="button" onClick={handleShare} style={{
-            padding: '10px 24px', borderRadius: 20, border: 'none', background: t.red,
-            color: '#fff', fontFamily: FONT.body, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-          }}>
-            {copied ? 'Copied!' : 'Share Score'}
-          </button>
-          <button type="button" onClick={handleRestart} style={{
-            padding: '10px 24px', borderRadius: 20, border: `1px solid ${t.border}`,
-            background: 'transparent', color: t.muted, fontFamily: FONT.mono, fontSize: 12, cursor: 'pointer',
-          }}>
-            Play Again
-          </button>
-        </div>
-        <div style={{
-          position: 'absolute', bottom: 12,
-          fontFamily: FONT.mono, fontSize: 10, color: '#525960',
-        }}>
-          r/Res_Publica_DE
-        </div>
-      </div>
+      <ResultScreen
+        title="Quiz Complete"
+        score={score}
+        maxScore={ROUNDS}
+        verdict={verdict}
+        emojiRow={emojiRow}
+        shareText={`World Atlas Quiz: ${score}/${ROUNDS}\n${emojiRow}\nr/Res_Publica_DE`}
+        earnedInfluence={earnedInfluence}
+        onRestart={handleRestart}
+      />
     )
   }
 

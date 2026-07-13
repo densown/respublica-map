@@ -6,7 +6,9 @@ import { createRoot } from 'react-dom/client'
 import { formatValue } from './formatValue'
 import { getTheme, FONT } from './theme'
 import { RulesOverlay, RulesButton } from './RulesOverlay'
+import { ResultScreen } from './ResultScreen'
 import { earnInfluence } from './earnInfluence'
+import { seededRandom, dailySeed, shuffleWith, isDistinguishableSet } from './gameKit'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef } from './worldTypes'
 
 const ROUNDS = 10
@@ -25,31 +27,12 @@ type SortRound = {
   correctOrder: string[]
 }
 
-function seededRandom(seed: number) {
-  let s = seed
-  return () => {
-    s = (s * 16807 + 0) % 2147483647
-    return (s - 1) / 2147483646
-  }
-}
-
-function shuffleWith<T>(arr: T[], rng: () => number): T[] {
-  const result = [...arr]
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [result[i], result[j]] = [result[j]!, result[i]!]
-  }
-  return result
-}
-
 function generateRounds(
   indicators: IndicatorDef[],
   geojson: WorldGeoJson,
   attempt: number,
 ): SortRound[] {
-  const today = new Date()
-  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate() + 7777 + attempt * 99991
-  const rng = seededRandom(seed)
+  const rng = seededRandom(dailySeed(attempt, 7777))
 
   const usableIndicators = indicators.filter((ind) => {
     const yearData = ind.data[ind.latestYear]
@@ -80,18 +63,31 @@ function generateRounds(
       }
     }
 
-    const picked = shuffleWith(entries, rng).slice(0, ITEMS_PER_ROUND * 3)
-    picked.sort((a, b) => b.value - a.value)
-
-    const spaced: SortCountry[] = []
-    const step = Math.max(1, Math.floor(picked.length / ITEMS_PER_ROUND))
-    for (let i = 0; i < ITEMS_PER_ROUND && i * step < picked.length; i++) {
-      spaced.push(picked[i * step]!)
+    // Mehrere Versuche: 4 Laender ziehen, deren Werte sich klar genug
+    // unterscheiden, damit die Reihenfolge erspielbar ist.
+    let spaced: SortCountry[] = []
+    for (let tryNo = 0; tryNo < 8; tryNo++) {
+      const sample = shuffleWith(entries, rng).slice(0, ITEMS_PER_ROUND)
+      if (sample.length < ITEMS_PER_ROUND) break
+      if (isDistinguishableSet(sample.map((s) => s.value))) {
+        spaced = sample
+        break
+      }
     }
-    while (spaced.length < ITEMS_PER_ROUND && picked.length >= ITEMS_PER_ROUND) {
-      const fallback = picked.find((p) => !spaced.includes(p))
-      if (fallback) spaced.push(fallback)
-      else break
+    // Fallback: gespreizte Auswahl wie bisher
+    if (spaced.length < ITEMS_PER_ROUND) {
+      const picked = shuffleWith(entries, rng).slice(0, ITEMS_PER_ROUND * 3)
+      picked.sort((a, b) => b.value - a.value)
+      spaced = []
+      const step = Math.max(1, Math.floor(picked.length / ITEMS_PER_ROUND))
+      for (let i = 0; i < ITEMS_PER_ROUND && i * step < picked.length; i++) {
+        spaced.push(picked[i * step]!)
+      }
+      while (spaced.length < ITEMS_PER_ROUND && picked.length >= ITEMS_PER_ROUND) {
+        const fallback = picked.find((p) => !spaced.includes(p))
+        if (fallback) spaced.push(fallback)
+        else break
+      }
     }
 
     const correctOrder = [...spaced].sort((a, b) => b.value - a.value).map((c) => c.iso3)
@@ -109,7 +105,6 @@ function SortApp() {
   const [picks, setPicks] = useState<string[]>([])
   const [showResult, setShowResult] = useState(false)
   const [roundScores, setRoundScores] = useState<number[]>([])
-  const [copied, setCopied] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [showRules, setShowRules] = useState(true)
   const [earnedInfluence, setEarnedInfluence] = useState(0)
@@ -184,18 +179,6 @@ function SortApp() {
     earnReported.current = false
   }, [])
 
-  const handleShare = useCallback(() => {
-    const blocks = roundScores.map((s) => {
-      if (s === ITEMS_PER_ROUND) return '🟩'
-      if (s >= ITEMS_PER_ROUND - 1) return '🟨'
-      return '🟥'
-    }).join('')
-    const text = `Rank It: ${totalScore}/${maxScore}\n${blocks}\nWorld Atlas by r/Res_Publica_DE`
-    void navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }, [roundScores, totalScore, maxScore])
 
   if (error) {
     return (
@@ -218,54 +201,20 @@ function SortApp() {
   if (isFinished) {
     const pct = Math.round((totalScore / maxScore) * 100)
     const verdict = pct >= 80 ? 'Ranking master!' : pct >= 50 ? 'Solid knowledge!' : 'Keep exploring!'
+    const emojiRow = roundScores.map((s) => (
+      s === ITEMS_PER_ROUND ? '🟩' : s >= ITEMS_PER_ROUND - 1 ? '🟨' : '🟥'
+    )).join('')
     return (
-      <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        minHeight: '100vh', background: '#111111', color: '#E8E4DC', padding: 24, gap: 16,
-      }}>
-        <div style={{ fontFamily: FONT.display, fontSize: 28, fontWeight: 900 }}>
-          Rank Complete<span style={{ color: t.red }}>.</span>
-        </div>
-        <div style={{ fontFamily: FONT.display, fontSize: 56, fontWeight: 900, color: t.red, lineHeight: 1 }}>
-          {totalScore}/{maxScore}
-        </div>
-        <div style={{ fontFamily: FONT.body, fontSize: 14, color: t.muted }}>
-          {verdict}
-        </div>
-        {earnedInfluence > 0 && (
-          <div style={{
-            fontFamily: FONT.mono, fontSize: 11, color: '#D4A843',
-            padding: '5px 14px', borderRadius: 14, border: '1px solid rgba(212,168,67,0.35)',
-          }}>
-            +{earnedInfluence} influence for the World Game
-          </div>
-        )}
-        <div style={{ fontFamily: FONT.mono, fontSize: 18, letterSpacing: 3, margin: '8px 0' }}>
-          {roundScores.map((s, i) => (
-            <span key={i}>{s === ITEMS_PER_ROUND ? '🟩' : s >= ITEMS_PER_ROUND - 1 ? '🟨' : '🟥'}</span>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-          <button type="button" onClick={handleShare} style={{
-            padding: '10px 24px', borderRadius: 20, border: 'none', background: t.red,
-            color: '#fff', fontFamily: FONT.body, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-          }}>
-            {copied ? 'Copied!' : 'Share Score'}
-          </button>
-          <button type="button" onClick={handleRestart} style={{
-            padding: '10px 24px', borderRadius: 20, border: `1px solid ${t.border}`,
-            background: 'transparent', color: t.muted, fontFamily: FONT.mono, fontSize: 12, cursor: 'pointer',
-          }}>
-            Play Again
-          </button>
-        </div>
-        <div style={{
-          position: 'absolute', bottom: 12,
-          fontFamily: FONT.mono, fontSize: 10, color: '#525960',
-        }}>
-          r/Res_Publica_DE
-        </div>
-      </div>
+      <ResultScreen
+        title="Rank Complete"
+        score={totalScore}
+        maxScore={maxScore}
+        verdict={verdict}
+        emojiRow={emojiRow}
+        shareText={`Rank It: ${totalScore}/${maxScore}\n${emojiRow}\nWorld Atlas by r/Res_Publica_DE`}
+        earnedInfluence={earnedInfluence}
+        onRestart={handleRestart}
+      />
     )
   }
 

@@ -7,6 +7,7 @@ import { formatValue } from './formatValue'
 import { getTheme, FONT } from './theme'
 import { RulesOverlay, RulesButton } from './RulesOverlay'
 import { earnInfluence } from './earnInfluence'
+import { isGoodPair } from './gameKit'
 import type { WorldGeoJson, IndicatorsFile, IndicatorDef } from './worldTypes'
 import type { LeaderboardEntry, LeaderboardResponse } from '../shared/api'
 
@@ -56,7 +57,10 @@ function pickRound(
   const left = excludeIso
     ? entries.find((e) => e.iso3 === excludeIso) ?? shuffled[0]!
     : shuffled[0]!
-  let right = shuffled.find((e) => e.iso3 !== left.iso3 && Math.abs(e.value - left.value) > 0)
+
+  // Bevorzugt ein Paar, das weder trivial noch praktisch gleich ist
+  let right = shuffled.find((e) => e.iso3 !== left.iso3 && isGoodPair(left.value, e.value))
+  if (!right) right = shuffled.find((e) => e.iso3 !== left.iso3 && Math.abs(e.value - left.value) > 0)
   if (!right) right = shuffled.find((e) => e.iso3 !== left.iso3)!
 
   return { indicator: ind, left, right }

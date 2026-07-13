@@ -427,6 +427,71 @@ function CompareTable({ countries, indicators, year, dark }: {
   )
 }
 
+/* ── Story facts ── */
+// Automatisch generierte Einordnung: wo sticht das Land heraus,
+// wo faellt es zurueck. Reine Rang-Aussagen, keine Wertung.
+
+function ordinal(n: number): string {
+  const rem10 = n % 10
+  const rem100 = n % 100
+  if (rem10 === 1 && rem100 !== 11) return `${n}st`
+  if (rem10 === 2 && rem100 !== 12) return `${n}nd`
+  if (rem10 === 3 && rem100 !== 13) return `${n}rd`
+  return `${n}th`
+}
+
+function StoryFacts({ iso3, indicators, year, dark, onSelectCode }: {
+  iso3: string; indicators: IndicatorDef[]; year: number
+  dark: boolean; onSelectCode: (code: string) => void
+}) {
+  const t = getTheme(dark)
+
+  const facts = useMemo(() => {
+    const ranked: { ind: IndicatorDef; rank: number; total: number }[] = []
+    for (const ind of indicators) {
+      const r = computeRank(ind, iso3, year)
+      if (r && r.total >= 30) ranked.push({ ind, rank: r.rank, total: r.total })
+    }
+    if (ranked.length < 2) return []
+    const best = ranked.reduce((a, b) => (a.rank <= b.rank ? a : b))
+    const worst = ranked.reduce((a, b) => (a.rank / a.total >= b.rank / b.total ? a : b))
+    if (best.ind.code === worst.ind.code) return [best]
+    return [best, worst]
+  }, [iso3, indicators, year])
+
+  if (facts.length === 0) return null
+
+  return (
+    <div style={{ padding: '10px 14px', borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
+      <div style={{
+        fontFamily: FONT.mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase',
+        color: t.muted, marginBottom: 6,
+      }}>
+        Stands out
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {facts.map(({ ind, rank, total }, i) => (
+          <button key={ind.code} type="button" onClick={() => onSelectCode(ind.code)} style={{
+            display: 'flex', alignItems: 'baseline', gap: 8, width: '100%',
+            padding: '5px 8px', borderRadius: 6, border: `1px solid ${t.border}`,
+            background: 'transparent', cursor: 'pointer', textAlign: 'left',
+          }}>
+            <span style={{
+              fontFamily: FONT.display, fontSize: 15, fontWeight: 900,
+              color: i === 0 ? (dark ? '#3DA85A' : '#2D7D46') : t.red, flexShrink: 0,
+            }}>
+              {ordinal(rank)}
+            </span>
+            <span style={{ fontFamily: FONT.body, fontSize: 12, color: t.ink, flex: 1, minWidth: 0 }}>
+              of {total} in {ind.name}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /* ── Main console ── */
 
 export type CountryConsoleProps = {
@@ -600,6 +665,9 @@ export function CountryConsole({
                 </div>
               )}
             </div>
+
+            <StoryFacts iso3={iso3} indicators={indicators} year={selectedYear}
+              dark={dark} onSelectCode={onSelectCode} />
 
             {/* All indicators + promo footer */}
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '10px 14px 24px', scrollbarWidth: 'thin' }}>
