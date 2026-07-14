@@ -219,7 +219,7 @@
     bottom: 0;
     right: 0;
     left: auto;
-    width: 300px;
+    width: 400px;
     height: auto;
     max-height: none;
     border-radius: 0;
@@ -229,6 +229,7 @@
   .atlas-console.atlas-console-expanded {
     height: auto;
     max-height: none;
+    width: min(600px, 60vw);
   }
 
   .atlas-console-handle {
@@ -236,10 +237,6 @@
   }
 
   .atlas-console-backdrop {
-    display: none !important;
-  }
-
-  .atlas-console-expand-btn {
     display: none !important;
   }
 }

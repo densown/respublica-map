@@ -1,6 +1,9 @@
 import { useState, useCallback, useId, useMemo } from 'react'
+import type { ReactNode } from 'react'
 import { formatValue } from './formatValue'
 import { IndicatorInfoButton } from './IndicatorInfo'
+import { CompareView } from './CompareView'
+import { groupByCategory } from './categories'
 import { getTheme, FONT } from './theme'
 import type { IndicatorDef, MapRow, WorldGeoJson } from './worldTypes'
 
@@ -160,96 +163,6 @@ function YearNav({ years, selected, onChange, dark }: {
   )
 }
 
-/* ── Radar Chart for Compare Mode ── */
-
-function RadarChart({ countries, indicators, year, dark }: {
-  countries: { iso3: string; name: string }[]
-  indicators: IndicatorDef[]
-  year: number
-  dark: boolean
-}) {
-  const t = getTheme(dark)
-  const size = 240
-  const cx = size / 2, cy = size / 2 + 4
-  const r = 72
-  const n = indicators.length
-  if (n < 3) return null
-
-  const angles = indicators.map((_, i) => (i * 2 * Math.PI / n) - Math.PI / 2)
-
-  const ranges = useMemo(() => indicators.map((ind) => {
-    const allVals: number[] = []
-    for (const yd of Object.values(ind.data)) {
-      for (const v of Object.values(yd)) {
-        if (v != null && !Number.isNaN(v)) allVals.push(v as number)
-      }
-    }
-    return { min: Math.min(...allVals), max: Math.max(...allVals) }
-  }), [indicators])
-
-  const normalized = countries.map((country) =>
-    indicators.map((ind, ii) => {
-      const yearData = ind.data[year] ?? ind.data[ind.latestYear]
-      const v = yearData?.[country.iso3]
-      if (v == null) return 0.05
-      const { min, max } = ranges[ii]!
-      return Math.max(0.05, (v - min) / (max - min || 1))
-    })
-  )
-
-  const colors = [t.red, dark ? '#3DA85A' : '#2D7D46']
-
-  return (
-    <div>
-      <svg width="100%" viewBox={`0 0 ${size} ${size}`} style={{ display: 'block' }}>
-        {[0.25, 0.5, 0.75, 1].map((level) => (
-          <polygon key={level}
-            points={angles.map((a) => `${cx + Math.cos(a) * r * level},${cy + Math.sin(a) * r * level}`).join(' ')}
-            fill="none" stroke={t.border} strokeWidth={0.5} />
-        ))}
-        {angles.map((a, i) => (
-          <line key={i} x1={cx} y1={cy}
-            x2={cx + Math.cos(a) * r} y2={cy + Math.sin(a) * r}
-            stroke={t.border} strokeWidth={0.5} />
-        ))}
-        {normalized.map((vals, ci) => (
-          <polygon key={ci}
-            points={vals.map((v, i) => `${cx + Math.cos(angles[i]!) * r * v},${cy + Math.sin(angles[i]!) * r * v}`).join(' ')}
-            fill={colors[ci]} fillOpacity={0.12}
-            stroke={colors[ci]} strokeWidth={1.5} strokeLinejoin="round" />
-        ))}
-        {normalized.map((vals, ci) => vals.map((v, i) => (
-          <circle key={`${ci}-${i}`}
-            cx={cx + Math.cos(angles[i]!) * r * v}
-            cy={cy + Math.sin(angles[i]!) * r * v}
-            r={2.5} fill={colors[ci]} />
-        )))}
-        {indicators.map((ind, i) => {
-          const labelR = r + 22
-          const x = cx + Math.cos(angles[i]!) * labelR
-          const y = cy + Math.sin(angles[i]!) * labelR
-          const cosA = Math.cos(angles[i]!)
-          const anchor = cosA > 0.3 ? 'start' : cosA < -0.3 ? 'end' : 'middle'
-          const label = ind.name.length > 14 ? ind.name.slice(0, 13) + '…' : ind.name
-          return (
-            <text key={i} x={x} y={y} textAnchor={anchor} dominantBaseline="middle"
-              fill={t.muted} fontSize={7} fontFamily={FONT.mono}>
-              {label}
-            </text>
-          )
-        })}
-      </svg>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 4 }}>
-        {countries.map((c, i) => (
-          <div key={c.iso3} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors[i] }} />
-            <span style={{ fontFamily: FONT.mono, fontSize: 9, color: t.ink }}>{c.name}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 /* ── Country Search (for compare mode) ── */
 
@@ -380,53 +293,6 @@ function IndicatorRow({ ind, iso3, year, regions, dark, isActive, onSelect }: {
 
 /* ── Compare Values Table ── */
 
-function CompareTable({ countries, indicators, year, dark }: {
-  countries: { iso3: string; name: string }[]
-  indicators: IndicatorDef[]
-  year: number
-  dark: boolean
-}) {
-  const t = getTheme(dark)
-  return (
-    <div>
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 10px',
-        fontFamily: FONT.mono, fontSize: 9, color: t.muted, textTransform: 'uppercase',
-        letterSpacing: '0.08em', paddingBottom: 6, borderBottom: `1px solid ${t.border}`,
-        marginBottom: 4,
-      }}>
-        <span>Indicator</span>
-        <span style={{ textAlign: 'right' }}>{countries[0]?.iso3}</span>
-        <span style={{ textAlign: 'right' }}>{countries[1]?.iso3}</span>
-      </div>
-      {indicators.map((ind) => {
-        const yearData = ind.data[year] ?? ind.data[ind.latestYear]
-        const vals = countries.map((c) => {
-          const v = yearData?.[c.iso3]
-          return v != null && !Number.isNaN(v) ? fmtForIndicator(v, ind) : '—'
-        })
-        return (
-          <div key={ind.code} style={{
-            display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 10px',
-            padding: '5px 0', borderBottom: `1px solid ${t.border}`,
-          }}>
-            <span style={{ fontFamily: FONT.mono, fontSize: 9, color: t.muted,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              textTransform: 'uppercase', letterSpacing: '0.05em',
-            }}>{ind.name}</span>
-            <span style={{ fontFamily: FONT.body, fontSize: 12, color: t.ink, fontWeight: 600, textAlign: 'right' }}>
-              {vals[0]}
-            </span>
-            <span style={{ fontFamily: FONT.body, fontSize: 12, color: dark ? '#3DA85A' : '#2D7D46', fontWeight: 600, textAlign: 'right' }}>
-              {vals[1]}
-            </span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 /* ── Story facts ── */
 // Automatisch generierte Einordnung: wo sticht das Land heraus,
 // wo faellt es zurueck. Reine Rang-Aussagen, keine Wertung.
@@ -492,6 +358,82 @@ function StoryFacts({ iso3, indicators, year, dark, onSelectCode }: {
   )
 }
 
+/* ── Quick facts (Overview) ── */
+// Die Basiszahlen, die jeder als erstes sucht.
+
+const QUICK_FACT_CODES = ['SP.POP.TOTL', 'NY.GDP.PCAP.CD', 'SP.DYN.LE00.IN']
+
+function QuickFacts({ iso3, indicators, year, dark }: {
+  iso3: string; indicators: IndicatorDef[]; year: number; dark: boolean
+}) {
+  const t = getTheme(dark)
+  const facts = QUICK_FACT_CODES
+    .map((code) => indicators.find((i) => i.code === code))
+    .filter((i): i is IndicatorDef => i != null)
+    .map((ind) => {
+      const yearData = ind.data[year] ?? ind.data[ind.latestYear]
+      const v = yearData?.[iso3]
+      return {
+        code: ind.code,
+        label: ind.code === 'SP.POP.TOTL' ? 'Population' : ind.code === 'NY.GDP.PCAP.CD' ? 'GDP p.c.' : 'Life exp.',
+        value: v != null && !Number.isNaN(v) ? formatValue(v, ind.unit, ind.code) : '—',
+      }
+    })
+
+  if (facts.length === 0) return null
+
+  return (
+    <div style={{
+      display: 'flex', borderBottom: `1px solid ${t.border}`,
+    }}>
+      {facts.map((f, i) => (
+        <div key={f.code} style={{
+          flex: 1, padding: '10px 8px', textAlign: 'center',
+          borderLeft: i > 0 ? `1px solid ${t.border}` : 'none',
+        }}>
+          <div style={{ fontFamily: FONT.display, fontSize: 16, fontWeight: 900, color: t.ink }}>
+            {f.value}
+          </div>
+          <div style={{ fontFamily: FONT.mono, fontSize: 9, color: t.muted, letterSpacing: '0.06em', marginTop: 2, textTransform: 'uppercase' }}>
+            {f.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/* ── Collapsible category section (Data tab) ── */
+
+function CategorySection({ label, color, count, defaultOpen, dark, children }: {
+  label: string; color: string; count: number; defaultOpen: boolean
+  dark: boolean; children: ReactNode
+}) {
+  const t = getTheme(dark)
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div>
+      <button type="button" onClick={() => setOpen(!open)} style={{
+        display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+        padding: '10px 0', border: 'none', background: 'transparent', cursor: 'pointer',
+        borderBottom: `1px solid ${t.border}`,
+      }}>
+        <span style={{ width: 8, height: 8, borderRadius: 4, background: color }} />
+        <span style={{
+          fontFamily: FONT.mono, fontSize: 10, letterSpacing: '0.1em',
+          textTransform: 'uppercase', color: t.ink, fontWeight: 700, flex: 1, textAlign: 'left',
+        }}>
+          {label}
+        </span>
+        <span style={{ fontFamily: FONT.mono, fontSize: 10, color: t.muted }}>
+          {count} · {open ? '−' : '+'}
+        </span>
+      </button>
+      {open && children}
+    </div>
+  )
+}
+
 /* ── Main console ── */
 
 export type CountryConsoleProps = {
@@ -514,7 +456,7 @@ export function CountryConsole({
   onClose, onSelectCode, onSelectYear,
 }: CountryConsoleProps) {
   const [expanded, setExpanded] = useState(false)
-  const [compareMode, setCompareMode] = useState(false)
+  const [activeTab, setActiveTab] = useState<'overview' | 'data' | 'compare'>('overview')
   const [compareCountry, setCompareCountry] = useState<{ iso3: string; name: string } | null>(null)
   const t = getTheme(dark)
   const activeIndicator = indicators.find((i) => i.code === selectedCode) ?? indicators[0]!
@@ -557,7 +499,7 @@ export function CountryConsole({
               }}>
                 {countryName}<span style={{ color: t.red }}>.</span>
               </h2>
-              <p style={{ fontFamily: FONT.mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.muted, margin: '3px 0 0' }}>
+              <p style={{ fontFamily: FONT.mono, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.muted, margin: '3px 0 0' }}>
                 {iso3}{region ? ` · ${region}` : ''}
               </p>
             </div>
@@ -568,78 +510,63 @@ export function CountryConsole({
             </div>
           </div>
 
-          {/* Year nav + Compare toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 8 }}>
-            {availableYears.length > 1 && (
+          {/* Year nav */}
+          {availableYears.length > 1 && (
+            <div style={{ marginTop: 8 }}>
               <YearNav years={availableYears} selected={selectedYear} onChange={onSelectYear} dark={dark} />
-            )}
-            <button type="button" onClick={() => { setCompareMode(!compareMode); if (compareMode) setCompareCountry(null) }}
-              style={{
-                padding: '4px 10px', borderRadius: 4, cursor: 'pointer',
-                background: compareMode ? t.red : 'transparent',
-                color: compareMode ? '#fff' : t.muted,
-                border: compareMode ? 'none' : `1px solid ${t.border}`,
-                fontFamily: FONT.mono, fontSize: 9, fontWeight: 600,
-                letterSpacing: '0.05em',
+            </div>
+          )}
+
+          {/* Tabs */}
+          <div style={{
+            display: 'flex', gap: 2, marginTop: 10, padding: 2, borderRadius: 8,
+            background: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+          }}>
+            {([['overview', 'Overview'], ['data', 'Data'], ['compare', 'Compare']] as const).map(([id, label]) => (
+              <button key={id} type="button" onClick={() => setActiveTab(id)} style={{
+                flex: 1, padding: '7px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: activeTab === id ? t.cardBg : 'transparent',
+                color: activeTab === id ? t.ink : t.muted,
+                fontFamily: FONT.body, fontSize: 12, fontWeight: activeTab === id ? 700 : 500,
+                boxShadow: activeTab === id ? '0 1px 4px rgba(0,0,0,0.25)' : 'none',
+                transition: 'all 0.15s',
               }}>
-              {compareMode ? 'Exit compare' : 'Compare'}
-            </button>
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Compare mode */}
-        {compareMode ? (
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '10px 14px 24px', scrollbarWidth: 'thin' }}>
+        {/* Tab: Compare */}
+        {activeTab === 'compare' && (
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 14px 24px', scrollbarWidth: 'thin' }}>
             {!compareCountry ? (
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontFamily: FONT.mono, fontSize: 9, color: t.muted, textTransform: 'uppercase',
+                <div style={{ fontFamily: FONT.mono, fontSize: 10, color: t.muted, textTransform: 'uppercase',
                   letterSpacing: '0.1em', marginBottom: 8 }}>
                   Select country to compare
                 </div>
                 <CountrySearchInline geojson={geojson} dark={dark} onSelect={handleCompareSelect} />
               </div>
             ) : (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div>
-                    <span style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 15, color: t.ink }}>
-                      {countryName}
-                    </span>
-                    <span style={{ fontFamily: FONT.mono, fontSize: 11, color: t.muted, margin: '0 6px' }}>vs</span>
-                    <span style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 15, color: dark ? '#3DA85A' : '#2D7D46' }}>
-                      {compareCountry.name}
-                    </span>
-                  </div>
-                  <button type="button" onClick={() => setCompareCountry(null)} style={{
-                    border: 'none', background: 'transparent', color: t.muted, cursor: 'pointer',
-                    fontFamily: FONT.mono, fontSize: 9, textDecoration: 'underline',
-                  }}>Change</button>
-                </div>
-
-                <RadarChart
-                  countries={[{ iso3, name: countryName }, compareCountry]}
-                  indicators={indicators}
-                  year={selectedYear}
-                  dark={dark}
-                />
-
-                <div style={{ marginTop: 14 }}>
-                  <CompareTable
-                    countries={[{ iso3, name: countryName }, compareCountry]}
-                    indicators={indicators}
-                    year={selectedYear}
-                    dark={dark}
-                  />
-                </div>
-              </>
+              <CompareView
+                a={{ iso3, name: countryName }}
+                b={compareCountry}
+                indicators={indicators}
+                year={selectedYear}
+                dark={dark}
+                onChangeCountry={() => setCompareCountry(null)}
+              />
             )}
           </div>
-        ) : (
-          <>
-            {/* Active indicator detail */}
-            <div style={{ padding: 14, borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
+        )}
+
+        {/* Tab: Overview */}
+        {activeTab === 'overview' && (
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', scrollbarWidth: 'thin' }}>
+            <div style={{ padding: 14, borderBottom: `1px solid ${t.border}` }}>
               <div style={{
-                fontFamily: FONT.mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase',
+                fontFamily: FONT.mono, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase',
                 color: t.muted, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6,
               }}>
                 <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -647,10 +574,10 @@ export function CountryConsole({
                 </span>
                 {activeIndicator && <IndicatorInfoButton indicator={activeIndicator} dark={dark} />}
               </div>
-              <div style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 32, color: t.ink, lineHeight: 1, letterSpacing: '-0.02em' }}>
+              <div style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 34, color: t.ink, lineHeight: 1, letterSpacing: '-0.02em' }}>
                 {mainValue}
               </div>
-              <div style={{ fontFamily: FONT.mono, fontSize: 9, color: t.muted, marginTop: 4, letterSpacing: '0.05em' }}>
+              <div style={{ fontFamily: FONT.mono, fontSize: 10, color: t.muted, marginTop: 4, letterSpacing: '0.05em' }}>
                 {activeIndicator?.code} · {selectedYear}
               </div>
               {activeRank && <PercentileBar rank={activeRank.rank} total={activeRank.total} dark={dark} />}
@@ -658,7 +585,7 @@ export function CountryConsole({
                 <div style={{ marginTop: 10 }}>
                   <EnhancedChart series={activeSeries} regionAvg={activeRegionAvg} dark={dark} height={56} />
                   {activeRegionAvg != null && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', fontFamily: FONT.mono, fontSize: 7, color: t.muted, marginTop: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', fontFamily: FONT.mono, fontSize: 8, color: t.muted, marginTop: 1 }}>
                       <span>--- Ø {region}</span>
                     </div>
                   )}
@@ -666,29 +593,38 @@ export function CountryConsole({
               )}
             </div>
 
+            <QuickFacts iso3={iso3} indicators={indicators} year={selectedYear} dark={dark} />
+
             <StoryFacts iso3={iso3} indicators={indicators} year={selectedYear}
-              dark={dark} onSelectCode={onSelectCode} />
+              dark={dark} onSelectCode={(code) => { onSelectCode(code) }} />
 
-            {/* All indicators + promo footer */}
-            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '10px 14px 24px', scrollbarWidth: 'thin' }}>
-              <div style={{
-                fontFamily: FONT.mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase',
-                color: t.muted, marginBottom: 6, paddingBottom: 4, borderBottom: `1px solid ${t.border}`,
-              }}>
-                All indicators
-              </div>
-              {indicators.map((ind) => (
-                <IndicatorRow key={ind.code} ind={ind} iso3={iso3} year={selectedYear}
-                  regions={regions} dark={dark} isActive={ind.code === selectedCode}
-                  onSelect={() => onSelectCode(ind.code)} />
-              ))}
-
-              <div style={{ marginTop: 16, padding: '12px 0 4px', borderTop: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <CopyLinkButton label="r/Res_Publica_DE" url="https://www.reddit.com/r/Res_Publica_DE/" variant="primary" dark={dark} />
-                <CopyLinkButton label="Full dashboard: app.respublica.media" url="https://app.respublica.media" variant="secondary" dark={dark} />
-              </div>
+            <div style={{ padding: '12px 14px 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <CopyLinkButton label="r/Res_Publica_DE" url="https://www.reddit.com/r/Res_Publica_DE/" variant="primary" dark={dark} />
+              <CopyLinkButton label="Full dashboard: app.respublica.media" url="https://app.respublica.media" variant="secondary" dark={dark} />
             </div>
-          </>
+          </div>
+        )}
+
+        {/* Tab: Data */}
+        {activeTab === 'data' && (
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '6px 14px 24px', scrollbarWidth: 'thin' }}>
+            {groupByCategory(indicators).map((group) => (
+              <CategorySection
+                key={group.meta.id}
+                label={group.meta.label}
+                color={group.meta.color}
+                count={group.items.length}
+                defaultOpen={group.items.some((i) => i.code === selectedCode)}
+                dark={dark}
+              >
+                {group.items.map((ind) => (
+                  <IndicatorRow key={ind.code} ind={ind} iso3={iso3} year={selectedYear}
+                    regions={regions} dark={dark} isActive={ind.code === selectedCode}
+                    onSelect={() => onSelectCode(ind.code)} />
+                ))}
+              </CategorySection>
+            ))}
+          </div>
         )}
       </div>
     </>
