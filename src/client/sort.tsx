@@ -319,18 +319,33 @@ function SortApp() {
               }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {isPicked && (
+                {showResult ? (
+                  // Nach der Aufloesung: dein Tipp und die richtige Position
+                  <span style={{
+                    fontFamily: FONT.mono, fontSize: 11, fontWeight: 700, minWidth: 42,
+                    display: 'inline-flex', alignItems: 'center', gap: 3,
+                  }}>
+                    {pickIndex === correctIndex ? (
+                      <span style={{ color: '#3DA85A' }}>{correctIndex + 1}.</span>
+                    ) : (
+                      <>
+                        <span style={{ color: t.red, textDecoration: 'line-through' }}>
+                          {pickIndex !== -1 ? `${pickIndex + 1}.` : '–'}
+                        </span>
+                        <span style={{ color: '#3DA85A' }}>→{correctIndex + 1}.</span>
+                      </>
+                    )}
+                  </span>
+                ) : isPicked ? (
                   <span style={{
                     fontFamily: FONT.mono, fontSize: 11, fontWeight: 700,
-                    color: showResult
-                      ? (pickIndex === correctIndex ? '#3DA85A' : t.red)
-                      : t.red,
-                    minWidth: 18,
+                    color: t.red, minWidth: 18,
                   }}>
                     {pickIndex + 1}.
                   </span>
+                ) : (
+                  <span style={{ minWidth: 18 }} />
                 )}
-                {!isPicked && <span style={{ minWidth: 18 }} />}
                 {country.name}
               </span>
               {showResult && (
