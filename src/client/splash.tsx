@@ -46,6 +46,8 @@ function Splash() {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', background: '#0A0A0A' }}>
+      {/* Zoom-Buttons auf dem Splash ausblenden, der Globus ist hier Kulisse */}
+      <style>{'.maplibregl-ctrl-top-right { display: none; }'}</style>
       {/* Globe background */}
       {globeReady && geojson && defaultIndicator && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>

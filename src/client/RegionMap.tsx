@@ -73,6 +73,15 @@ export function RegionMap({ geojson, regions, selectedRegion, onRegionClick }: R
       style: {
         version: 8,
         sources: {},
+        sky: {
+          'sky-color': 'rgba(0,0,0,0)',
+          'horizon-color': 'rgba(76,138,196,0.45)',
+          'fog-color': 'rgba(24,48,82,0.3)',
+          'sky-horizon-blend': 0.7,
+          'horizon-fog-blend': 0.6,
+          'fog-ground-blend': 0.85,
+          'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 4, 0.6, 7, 0],
+        },
         layers: [
           { id: 'background', type: 'background', paint: { 'background-color': WATER } },
         ],

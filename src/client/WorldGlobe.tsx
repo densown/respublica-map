@@ -22,6 +22,17 @@ function buildLocalStyle(dark: boolean): maplibregl.StyleSpecification {
   return {
     version: 8,
     sources: {},
+    // Atmosphaeren-Glow um die Kugel; sky bleibt transparent,
+    // damit das CSS-Sternenfeld dahinter sichtbar ist.
+    sky: {
+      'sky-color': 'rgba(0,0,0,0)',
+      'horizon-color': dark ? 'rgba(76,138,196,0.5)' : 'rgba(140,185,230,0.65)',
+      'fog-color': dark ? 'rgba(24,48,82,0.35)' : 'rgba(210,228,245,0.5)',
+      'sky-horizon-blend': 0.7,
+      'horizon-fog-blend': 0.6,
+      'fog-ground-blend': 0.85,
+      'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 4, 0.6, 7, 0],
+    },
     layers: [
       {
         id: 'background',
@@ -30,6 +41,37 @@ function buildLocalStyle(dark: boolean): maplibregl.StyleSpecification {
       },
     ],
   }
+}
+
+// Deterministisches Sternenfeld (gleiches Muster bei jedem Render)
+function buildStars(count: number): { x: number; y: number; r: number; o: number }[] {
+  let s = 421337
+  const rnd = () => {
+    s = (s * 16807) % 2147483647
+    return (s - 1) / 2147483646
+  }
+  return Array.from({ length: count }, () => ({
+    x: rnd() * 100,
+    y: rnd() * 100,
+    r: 0.4 + rnd() * 1.0,
+    o: 0.25 + rnd() * 0.6,
+  }))
+}
+
+function Starfield() {
+  const stars = useMemo(() => buildStars(150), [])
+  return (
+    <svg
+      aria-hidden
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+      preserveAspectRatio="xMidYMid slice"
+      viewBox="0 0 100 100"
+    >
+      {stars.map((st, i) => (
+        <circle key={i} cx={st.x} cy={st.y} r={st.r * 0.12} fill="#E8E4DC" opacity={st.o} />
+      ))}
+    </svg>
+  )
 }
 
 function buildFillExpr(
@@ -226,11 +268,13 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   useEffect(() => {
     if (!geojson || !containerRef.current) return
 
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: buildLocalStyle(dark),
-      center: [10, 20],
-      zoom: 1.2,
+      center: reducedMotion ? [10, 20] : [95, 10],
+      zoom: reducedMotion ? 1.2 : 0.3,
       maxZoom: 6,
       minZoom: 0,
       attributionControl: false,
@@ -244,19 +288,57 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
 
     mapRef.current = map
 
+    // Idle-Rotation: nach 10s ohne Interaktion dreht der Globus langsam
+    let idleTimer: ReturnType<typeof setTimeout> | null = null
+    let spinning = false
+    let removed = false
+
+    const spinStep = () => {
+      if (removed || !spinning || map.getZoom() > 2.2) return
+      const c = map.getCenter()
+      map.easeTo({ center: [c.lng + 8, c.lat], duration: 5000, easing: (x) => x })
+    }
+
+    const scheduleSpin = () => {
+      if (reducedMotion || removed) return
+      if (idleTimer) clearTimeout(idleTimer)
+      idleTimer = setTimeout(() => {
+        spinning = true
+        spinStep()
+      }, 10000)
+    }
+
+    const stopSpin = () => {
+      spinning = false
+      scheduleSpin()
+    }
+
+    map.on('moveend', () => { if (spinning) spinStep() })
+    map.on('mousedown', stopSpin)
+    map.on('touchstart', stopSpin)
+    map.on('wheel', stopSpin)
+
     map.on('style.load', function onStyleLoad() {
       map.off('style.load', onStyleLoad)
       try {
         map.setProjection({ type: 'globe' })
       } catch { /* */ }
       installLayers(map, geojson)
-      map.fitBounds(
-        [[-179.5, -60], [179.5, 75]],
-        { padding: 20, duration: 700, maxZoom: 1.3 },
-      )
+      if (reducedMotion) {
+        map.fitBounds(
+          [[-179.5, -60], [179.5, 75]],
+          { padding: 20, duration: 0, maxZoom: 1.3 },
+        )
+      } else {
+        // Intro: einmal um die halbe Welt auf Europa/Afrika zufliegen
+        map.flyTo({ center: [10, 22], zoom: 1.3, duration: 2800, curve: 1.2 })
+      }
+      scheduleSpin()
     })
 
     return () => {
+      removed = true
+      if (idleTimer) clearTimeout(idleTimer)
       popupRef.current?.remove()
       popupRef.current = null
       map.remove()
@@ -305,8 +387,14 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   }
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', flex: 1, minHeight: 0 }}>
-      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+    <div style={{
+      position: 'relative', width: '100%', height: '100%', flex: 1, minHeight: 0,
+      background: dark
+        ? 'radial-gradient(ellipse at 50% 45%, #101625 0%, #05070D 65%, #020308 100%)'
+        : 'radial-gradient(ellipse at 50% 45%, #DCE8F2 0%, #C8D6E0 70%)',
+    }}>
+      {dark && <Starfield />}
+      <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
     </div>
   )
 })
