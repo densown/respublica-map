@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { formatValue } from './formatValue'
 import { IndicatorInfoButton } from './IndicatorInfo'
 import { CompareView } from './CompareView'
+import { Flag } from './Flag'
 import { groupByCategory } from './categories'
 import { getTheme, FONT } from './theme'
 import type { IndicatorDef, MapRow, WorldGeoJson } from './worldTypes'
@@ -496,8 +497,12 @@ export function CountryConsole({
               <h2 style={{
                 fontFamily: FONT.display, fontWeight: 900, fontSize: 20, color: t.ink,
                 lineHeight: 1.1, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                display: 'flex', alignItems: 'center', gap: 8,
               }}>
-                {countryName}<span style={{ color: t.red }}>.</span>
+                <Flag iso3={iso3} height={15} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {countryName}<span style={{ color: t.red }}>.</span>
+                </span>
               </h2>
               <p style={{ fontFamily: FONT.mono, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.muted, margin: '3px 0 0' }}>
                 {iso3}{region ? ` · ${region}` : ''}

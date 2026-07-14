@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { getTheme, FONT } from './theme'
 import { formatValue } from './formatValue'
+import { Flag } from './Flag'
 import { groupByCategory, CORE_RADAR_CODES } from './categories'
 import type { IndicatorDef } from './worldTypes'
 
@@ -394,11 +395,13 @@ export function CompareView({ a, b, indicators, year, dark, onChangeCountry }: C
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       {/* VS-Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <Flag iso3={a.iso3} height={13} />
           <span style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 17, color: colorA }}>
             {a.name}
           </span>
           <span style={{ fontFamily: FONT.mono, fontSize: 11, color: t.muted }}>vs</span>
+          <Flag iso3={b.iso3} height={13} />
           <span style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 17, color: colorB }}>
             {b.name}
           </span>
