@@ -55,6 +55,7 @@ function Atlas() {
   const [selectedCountry, setSelectedCountry] = useState<{ iso3: string; name: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showHint, setShowHint] = useState(true)
+  const [nightMode, setNightMode] = useState(false)
   const dark = useDarkMode()
   const globeRef = useRef<WorldGlobeHandle>(null)
 
@@ -147,7 +148,26 @@ function Atlas() {
       <WorldGlobe ref={globeRef} geojson={geojson} data={rows}
         category={activeIndicator?.category ?? 'economy'}
         unit={unit} indicatorName={activeIndicator?.name ?? ''}
-        formatValue={fmt} dark={dark} onCountryClick={handleCountryClick} />
+        formatValue={fmt} dark={dark} nightMode={nightMode}
+        onCountryClick={handleCountryClick} />
+
+      {/* Night-View-Toggle */}
+      <button
+        type="button"
+        onClick={() => setNightMode((v) => !v)}
+        title={nightMode ? 'Back to data view' : 'Earth at night'}
+        style={{
+          position: 'absolute', top: 96, right: 10, zIndex: 20,
+          width: 30, height: 30, borderRadius: 6,
+          border: `1px solid ${nightMode ? '#FFC46B' : (dark ? '#2D2D2D' : '#E8E4DC')}`,
+          background: nightMode ? 'rgba(255,196,107,0.15)' : (dark ? 'rgba(26,26,26,0.9)' : 'rgba(255,255,255,0.9)'),
+          color: nightMode ? '#FFC46B' : '#8B8B8B',
+          cursor: 'pointer', fontSize: 14, lineHeight: 1,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        {'☾'}
+      </button>
 
       <IndicatorPicker indicators={indicators} selected={selectedCode} onSelect={setSelectedCode} dark={dark} />
       <SearchBar geojson={geojson} dark={dark} onSelect={handleSearchSelect} />
@@ -158,7 +178,7 @@ function Atlas() {
         <YearSlider years={availableYears} selected={activeYear} onChange={setSelectedYear} dark={dark} />
       )}
 
-      {activeIndicator && (
+      {activeIndicator && !nightMode && (
         <Legend category={activeIndicator.category} vMin={vMin} vMax={vMax}
           indicatorName={activeIndicator.name} year={activeYear} formatValue={fmt} dark={dark} />
       )}

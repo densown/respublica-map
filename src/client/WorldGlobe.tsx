@@ -107,8 +107,13 @@ export type WorldGlobeProps = {
   indicatorName: string
   formatValue: (v: number) => string
   dark: boolean
+  // Night View: Choropleth wird abgedunkelt, nur City Lights leuchten
+  nightMode?: boolean
   onCountryClick?: (iso3: string, name: string) => void
 }
+
+const NIGHT_LAND = '#151A21'
+const NIGHT_BORDER = '#232A33'
 
 export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function WorldGlobe({
   geojson,
@@ -116,6 +121,7 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   category,
   formatValue: fmtValue,
   dark,
+  nightMode = false,
   onCountryClick,
 }, ref) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -126,6 +132,7 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   const fmtRef = useRef(fmtValue)
   const clickRef = useRef(onCountryClick)
   const darkRef = useRef(dark)
+  const nightRef = useRef(nightMode)
   const cityLightsRef = useRef<{
     type: 'FeatureCollection'
     features: {
@@ -139,6 +146,7 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   useEffect(() => { fmtRef.current = fmtValue }, [fmtValue])
   useEffect(() => { clickRef.current = onCountryClick }, [onCountryClick])
   useEffect(() => { darkRef.current = dark }, [dark])
+  useEffect(() => { nightRef.current = nightMode }, [nightMode])
 
   useImperativeHandle(ref, () => ({
     flyTo(lng: number, lat: number) {
@@ -149,8 +157,10 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   const noData = dark ? NODATA_DARK : NODATA_LIGHT
 
   const fillExpr = useMemo(
-    () => buildFillExpr(data, category, noData, dark),
-    [data, category, noData, dark],
+    () => (nightMode
+      ? (NIGHT_LAND as unknown as ExpressionSpecification)
+      : buildFillExpr(data, category, noData, dark)),
+    [data, category, noData, dark, nightMode],
   )
 
   const borderColor: ExpressionSpecification = useMemo(
@@ -158,9 +168,9 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
       'case',
       ['boolean', ['feature-state', 'hover'], false],
       '#ffffff',
-      '#000000',
+      nightMode ? NIGHT_BORDER : '#000000',
     ],
-    [],
+    [nightMode],
   )
 
   const borderWidth: ExpressionSpecification = useMemo(
@@ -176,9 +186,9 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   useEffect(() => { borderColorRef.current = borderColor }, [borderColor])
   useEffect(() => { borderWidthRef.current = borderWidth }, [borderWidth])
 
-  // City Lights: leuchtende Staedte im Dark Mode, wie eine Nachtaufnahme
+  // City Lights: leuchtende Staedte im Night View
   const installCityLights = useCallback((map: maplibregl.Map) => {
-    if (!darkRef.current || !cityLightsRef.current || map.getSource('city-lights')) return
+    if (!nightRef.current || !cityLightsRef.current || map.getSource('city-lights')) return
     map.addSource('city-lights', {
       type: 'geojson',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -203,14 +213,14 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   }, [])
 
   useEffect(() => {
-    if (!dark || cityLightsRef.current) {
-      // Light Mode: Layer entfernen, falls vorhanden
+    if (!nightMode || cityLightsRef.current) {
+      // Night View aus: Layer entfernen, falls vorhanden
       const map = mapRef.current
-      if (!dark && map?.getLayer('city-lights')) {
+      if (!nightMode && map?.getLayer('city-lights')) {
         map.removeLayer('city-lights')
         map.removeSource('city-lights')
       }
-      if (dark && cityLightsRef.current && mapRef.current) installCityLights(mapRef.current)
+      if (nightMode && cityLightsRef.current && mapRef.current) installCityLights(mapRef.current)
       return
     }
     let cancelled = false
@@ -230,7 +240,7 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
       })
       .catch(() => { /* Lichter sind optional */ })
     return () => { cancelled = true }
-  }, [dark, installCityLights])
+  }, [nightMode, installCityLights])
 
   const installLayers = useCallback(
     (map: maplibregl.Map, gj: WorldGeoJson) => {

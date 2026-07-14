@@ -59,6 +59,7 @@ function Splash() {
             indicatorName={defaultIndicator.name ?? ''}
             formatValue={(v) => String(v)}
             dark={true}
+            nightMode={true}
           />
         </div>
       )}
