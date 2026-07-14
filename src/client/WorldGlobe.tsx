@@ -125,10 +125,20 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   const dataRef = useRef(data)
   const fmtRef = useRef(fmtValue)
   const clickRef = useRef(onCountryClick)
+  const darkRef = useRef(dark)
+  const cityLightsRef = useRef<{
+    type: 'FeatureCollection'
+    features: {
+      type: 'Feature'
+      geometry: { type: 'Point'; coordinates: [number, number] }
+      properties: { c: number }
+    }[]
+  } | null>(null)
 
   useEffect(() => { dataRef.current = data }, [data])
   useEffect(() => { fmtRef.current = fmtValue }, [fmtValue])
   useEffect(() => { clickRef.current = onCountryClick }, [onCountryClick])
+  useEffect(() => { darkRef.current = dark }, [dark])
 
   useImperativeHandle(ref, () => ({
     flyTo(lng: number, lat: number) {
@@ -166,6 +176,62 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   useEffect(() => { borderColorRef.current = borderColor }, [borderColor])
   useEffect(() => { borderWidthRef.current = borderWidth }, [borderWidth])
 
+  // City Lights: leuchtende Staedte im Dark Mode, wie eine Nachtaufnahme
+  const installCityLights = useCallback((map: maplibregl.Map) => {
+    if (!darkRef.current || !cityLightsRef.current || map.getSource('city-lights')) return
+    map.addSource('city-lights', {
+      type: 'geojson',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: cityLightsRef.current as any,
+    })
+    map.addLayer({
+      id: 'city-lights',
+      type: 'circle',
+      source: 'city-lights',
+      paint: {
+        'circle-color': '#FFC46B',
+        'circle-blur': 0.9,
+        'circle-opacity': ['interpolate', ['linear'], ['get', 'c'], 1, 0.5, 5, 0.9],
+        'circle-radius': [
+          'interpolate', ['linear'], ['zoom'],
+          0, ['*', ['get', 'c'], 0.7],
+          3, ['*', ['get', 'c'], 1.8],
+          6, ['*', ['get', 'c'], 4.5],
+        ],
+      },
+    }, map.getLayer('country-borders') ? 'country-borders' : undefined)
+  }, [])
+
+  useEffect(() => {
+    if (!dark || cityLightsRef.current) {
+      // Light Mode: Layer entfernen, falls vorhanden
+      const map = mapRef.current
+      if (!dark && map?.getLayer('city-lights')) {
+        map.removeLayer('city-lights')
+        map.removeSource('city-lights')
+      }
+      if (dark && cityLightsRef.current && mapRef.current) installCityLights(mapRef.current)
+      return
+    }
+    let cancelled = false
+    void fetch('/data/citylights.json')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((rows: [number, number, number][] | null) => {
+        if (cancelled || !rows) return
+        cityLightsRef.current = {
+          type: 'FeatureCollection',
+          features: rows.map(([lng, lat, c]) => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [lng, lat] },
+            properties: { c },
+          })),
+        }
+        if (mapRef.current?.getLayer('country-fills')) installCityLights(mapRef.current)
+      })
+      .catch(() => { /* Lichter sind optional */ })
+    return () => { cancelled = true }
+  }, [dark, installCityLights])
+
   const installLayers = useCallback(
     (map: maplibregl.Map, gj: WorldGeoJson) => {
       if (map.getSource('countries')) return
@@ -193,6 +259,8 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
           'line-width': borderWidthRef.current,
         },
       })
+
+      installCityLights(map)
 
       if (!popupRef.current) {
         popupRef.current = new maplibregl.Popup({
@@ -262,7 +330,7 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
       map.on('mouseleave', 'country-fills', onLeave)
       map.on('click', 'country-fills', onClick)
     },
-    [],
+    [installCityLights],
   )
 
   useEffect(() => {
