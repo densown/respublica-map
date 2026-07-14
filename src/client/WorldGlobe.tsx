@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useCallback, useImperativeHandle, forwardRef } from 'react'
+import { useEffect, useRef, useMemo, useState, useCallback, useImperativeHandle, forwardRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import type { ExpressionSpecification } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -74,6 +74,64 @@ function Starfield() {
   )
 }
 
+// Sternschnuppe: fliegt alle paar Sekunden an zufaelliger Position vorbei
+function ShootingStars() {
+  const [shot, setShot] = useState<{ key: number; top: number; left: number; angle: number } | null>(null)
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let alive = true
+    let timer: ReturnType<typeof setTimeout>
+    let key = 0
+    const schedule = () => {
+      timer = setTimeout(() => {
+        if (!alive) return
+        key += 1
+        setShot({
+          key,
+          top: 5 + Math.random() * 45,
+          left: 10 + Math.random() * 70,
+          angle: 20 + Math.random() * 40,
+        })
+        schedule()
+      }, 5000 + Math.random() * 9000)
+    }
+    schedule()
+    return () => { alive = false; clearTimeout(timer) }
+  }, [])
+
+  if (!shot) return null
+
+  return (
+    <>
+      <style>{`
+        @keyframes wg-shoot {
+          0% { transform: translate(0, 0); opacity: 0; }
+          12% { opacity: 1; }
+          100% { transform: translate(160px, 90px); opacity: 0; }
+        }
+      `}</style>
+      <span
+        key={shot.key}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: `${shot.top}%`,
+          left: `${shot.left}%`,
+          width: 70,
+          height: 1.5,
+          borderRadius: 1,
+          transformOrigin: 'left center',
+          rotate: `${shot.angle}deg`,
+          background: 'linear-gradient(90deg, rgba(232,228,220,0) 0%, rgba(232,228,220,0.9) 100%)',
+          animation: 'wg-shoot 1.3s ease-out forwards',
+          pointerEvents: 'none',
+        }}
+      />
+    </>
+  )
+}
+
 function buildFillExpr(
   rows: MapRow[],
   category: string,
@@ -109,6 +167,8 @@ export type WorldGlobeProps = {
   dark: boolean
   // Night View: Choropleth wird abgedunkelt, nur City Lights leuchten
   nightMode?: boolean
+  // Rotation startet sofort statt erst nach 10s Leerlauf (fuer den Splash)
+  autoRotate?: boolean
   onCountryClick?: (iso3: string, name: string) => void
 }
 
@@ -122,6 +182,7 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   formatValue: fmtValue,
   dark,
   nightMode = false,
+  autoRotate = false,
   onCountryClick,
 }, ref) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -377,13 +438,14 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
       map.easeTo({ center: [c.lng + 8, c.lat], duration: 5000, easing: (x) => x })
     }
 
-    const scheduleSpin = () => {
+    // Bei autoRotate nach kurzer Pause weiterdrehen, sonst nach 10s Leerlauf
+    const scheduleSpin = (delay = autoRotate ? 4000 : 10000) => {
       if (reducedMotion || removed) return
       if (idleTimer) clearTimeout(idleTimer)
       idleTimer = setTimeout(() => {
         spinning = true
         spinStep()
-      }, 10000)
+      }, delay)
     }
 
     const stopSpin = () => {
@@ -411,7 +473,8 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
         // Intro: einmal um die halbe Welt auf Europa/Afrika zufliegen
         map.flyTo({ center: [10, 22], zoom: 1.3, duration: 2800, curve: 1.2 })
       }
-      scheduleSpin()
+      // Erst nach dem Intro mit der Rotation beginnen
+      scheduleSpin(autoRotate && !reducedMotion ? 3100 : undefined)
     })
 
     return () => {
@@ -472,6 +535,7 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
         : 'radial-gradient(ellipse at 50% 45%, #DCE8F2 0%, #C8D6E0 70%)',
     }}>
       {dark && <Starfield />}
+      {dark && <ShootingStars />}
       <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
     </div>
   )

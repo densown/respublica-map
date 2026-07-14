@@ -51,6 +51,20 @@ api.get('/init', async (c) => {
   }
 })
 
+api.post('/subscribe', async (c) => {
+  try {
+    const username = await reddit.getCurrentUsername()
+    if (!username) {
+      return c.json<ErrorResponse>({ status: 'error', message: 'Not logged in' }, 401)
+    }
+    await reddit.subscribeToCurrentSubreddit()
+    return c.json({ ok: true })
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    return c.json<ErrorResponse>({ status: 'error', message: msg }, 500)
+  }
+})
+
 api.get('/stats', async (c) => {
   try {
     const today = dateKey()

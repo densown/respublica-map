@@ -19,6 +19,15 @@ function Splash() {
   const [geojson, setGeojson] = useState<WorldGeoJson | null>(null)
   const [indicators, setIndicators] = useState<IndicatorDef[] | null>(null)
   const [globeReady, setGlobeReady] = useState(false)
+  const [followState, setFollowState] = useState<'idle' | 'busy' | 'done'>('idle')
+
+  const handleFollow = () => {
+    if (followState !== 'idle') return
+    setFollowState('busy')
+    void fetch('/api/subscribe', { method: 'POST' })
+      .then((r) => setFollowState(r.ok ? 'done' : 'idle'))
+      .catch(() => setFollowState('idle'))
+  }
 
   useEffect(() => {
     void Promise.all([
@@ -60,6 +69,7 @@ function Splash() {
             formatValue={(v) => String(v)}
             dark={true}
             nightMode={true}
+            autoRotate={true}
           />
         </div>
       )}
@@ -154,6 +164,26 @@ function Splash() {
                 Rank It
               </button>
             </div>
+
+            <button
+              onClick={handleFollow}
+              disabled={followState !== 'idle'}
+              style={{
+                marginTop: 6, padding: '7px 18px', borderRadius: 16,
+                border: `1px solid ${followState === 'done' ? 'rgba(61,168,90,0.6)' : 'rgba(232,56,79,0.5)'}`,
+                background: followState === 'done' ? 'rgba(61,168,90,0.12)' : 'rgba(232,56,79,0.1)',
+                backdropFilter: 'blur(8px)',
+                color: followState === 'done' ? '#3DA85A' : '#F0808F',
+                fontSize: 11, fontWeight: 600,
+                cursor: followState === 'idle' ? 'pointer' : 'default',
+                fontFamily: "'IBM Plex Mono', monospace",
+                transition: 'all 0.25s',
+              }}
+            >
+              {followState === 'done' ? 'Following r/Res_Publica_DE ✓'
+                : followState === 'busy' ? 'Following...'
+                : '+ Follow r/Res_Publica_DE'}
+            </button>
           </div>
         </div>
 
