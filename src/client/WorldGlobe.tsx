@@ -169,6 +169,9 @@ export type WorldGlobeProps = {
   nightMode?: boolean
   // Rotation startet sofort statt erst nach 10s Leerlauf (fuer den Splash)
   autoRotate?: boolean
+  // false = reine Kulisse: keine Gesten, keine Controls (Pflicht fuer
+  // Inline-Posts, Reddit verbietet Scroll-Traps im Feed)
+  interactive?: boolean
   onCountryClick?: (iso3: string, name: string) => void
 }
 
@@ -183,6 +186,7 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
   dark,
   nightMode = false,
   autoRotate = false,
+  interactive = true,
   onCountryClick,
 }, ref) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -418,12 +422,16 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
       minZoom: 0,
       attributionControl: false,
       dragRotate: true,
+      // Kulissen-Modus: MapLibre faengt keinerlei Gesten ab
+      interactive,
     })
 
-    map.addControl(
-      new maplibregl.NavigationControl({ showCompass: false }),
-      'top-right',
-    )
+    if (interactive) {
+      map.addControl(
+        new maplibregl.NavigationControl({ showCompass: false }),
+        'top-right',
+      )
+    }
 
     mapRef.current = map
 
@@ -536,7 +544,14 @@ export const WorldGlobe = forwardRef<WorldGlobeHandle, WorldGlobeProps>(function
     }}>
       {dark && <Starfield />}
       {dark && <ShootingStars />}
-      <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+      <div
+        ref={containerRef}
+        style={{
+          position: 'absolute', inset: 0,
+          // Nicht-interaktiv: Gesten gehen komplett an die Seite durch
+          pointerEvents: interactive ? 'auto' : 'none',
+        }}
+      />
     </div>
   )
 })

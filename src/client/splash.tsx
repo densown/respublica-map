@@ -70,6 +70,7 @@ function Splash() {
             dark={true}
             nightMode={true}
             autoRotate={true}
+            interactive={false}
           />
         </div>
       )}
