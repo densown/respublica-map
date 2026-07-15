@@ -10,6 +10,26 @@
       },
       "game": {
         "entry": "game.html"
+      },
+      "quiz": {
+        "entry": "quiz.html"
+      },
+      "higher": {
+        "entry": "higher.html"
+      },
+      "sort": {
+        "entry": "sort.html"
+      },
+      "world": {
+        "entry": "world.html"
+      }
+    }
+  },
+  "scheduler": {
+    "tasks": {
+      "world-tick": {
+        "endpoint": "/internal/scheduler/world-tick",
+        "cron": "0 20 * * *"
       }
     }
   },
@@ -20,23 +40,13 @@
   "menu": {
     "items": [
       {
-        "label": "Create a new post",
-        "description": "respublica-map",
+        "label": "Create World Atlas",
+        "description": "Create a new World Atlas post",
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/post-create"
-      },
-      {
-        "label": "Example form",
-        "description": "Show a simple form",
-        "location": "subreddit",
-        "forUserType": "moderator",
-        "endpoint": "/internal/menu/example-form"
       }
     ]
-  },
-  "forms": {
-    "exampleForm": "/internal/form/example-submit"
   },
   "triggers": {
     "onAppInstall": "/internal/triggers/on-app-install"

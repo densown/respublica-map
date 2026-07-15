@@ -1,18 +1,23 @@
 export type InitResponse = {
-  type: 'init';
-  postId: string;
-  count: number;
-  username: string;
-};
+  type: 'init'
+  postId: string
+  username: string
+}
 
-export type IncrementResponse = {
-  type: 'increment';
-  postId: string;
-  count: number;
-};
+export type LeaderboardEntry = {
+  username: string
+  score: number
+  rank: number
+}
 
-export type DecrementResponse = {
-  type: 'decrement';
-  postId: string;
-  count: number;
-};
+export type LeaderboardResponse = {
+  entries: LeaderboardEntry[]
+  userEntry?: LeaderboardEntry
+}
+
+export type ScoreSubmitResponse = {
+  accepted: boolean
+  newBest: boolean
+  previousBest?: number
+  rank: number
+}
